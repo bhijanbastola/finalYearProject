@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    {% block navbar %}
+    <h1>Navbar</h1>
+    
+    {% endblock navbar %}
+    <h1>Dashboard</h1>
+    
+    {% block content %}
+    <div class="container">
+        <h2>Welcome to the Dashboard</h2>
+        <p>This is where you can manage your reservations and view statistics.</p>
+    </div>
+
+
+
+
+    {% endblock content %}
+    
+
+</body>
+</html>
