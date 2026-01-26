@@ -1,0 +1,1317 @@
+<div
+  class="export-wrapper"
+  style="
+    width: 1440px;
+    min-height: 812px;
+    position: relative;
+    font-family: var(--font-family-body);
+    background-color: var(--background);
+  "
+>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@100;200;300;400;500;600;700;800;900&family=Geist:wght@100;200;300;400;500;600;700;800;900&family=IBM+Plex+Mono:wght@100;200;300;400;500;600;700&family=IBM+Plex+Sans:wght@100;200;300;400;500;600;700&family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Nunito:wght@200;300;400;500;600;700;800;900&family=PT+Serif:wght@400;700&family=Roboto+Slab:wght@100;200;300;400;500;600;700;800;900&family=Roboto:wght@100;300;400;500;700;900&family=Shantell+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <html>
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Tourism Dashboard</title>
+      <style id="main-styles">
+        :root {
+          --sidebar-width: 260px;
+          --header-height: 72px;
+        }
+
+        * {
+          box-sizing: border-box;
+        }
+
+        .export-wrapper {
+          margin: 0;
+          font-family: var(--font-family-body);
+          background-color: var(--background);
+          color: var(--foreground);
+          display: flex;
+          min-height: 100vh;
+        }
+
+        .app-container {
+          display: flex;
+          width: 100%;
+          min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+          width: var(--sidebar-width);
+          background-color: var(--sidebar);
+          color: var(--sidebar-foreground);
+          border-right: 1px solid var(--border);
+          display: flex;
+          flex-direction: column;
+          padding: 32px 24px;
+          flex-shrink: 0;
+        }
+
+        .logo-area {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 48px;
+          padding-left: 8px;
+        }
+
+        .logo-icon {
+          width: 36px;
+          height: 36px;
+          background-color: var(--primary);
+          border-radius: var(--radius-lg);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--primary-foreground);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-text {
+          font-size: 20px;
+          font-weight: 700;
+          letter-spacing: -0.02em;
+        }
+
+        .nav-menu {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          flex: 1;
+        }
+
+        .nav-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 12px;
+          border-radius: var(--radius-md);
+          color: var(--muted-foreground);
+          text-decoration: none;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          user-select: none;
+        }
+
+        .nav-item:hover {
+          background-color: var(--secondary);
+          color: var(--foreground);
+        }
+
+        .nav-item.active {
+          background-color: var(--sidebar-primary);
+          color: var(--sidebar-primary-foreground);
+          font-weight: 600;
+        }
+
+        .nav-section-label {
+          font-size: 11px;
+          text-transform: uppercase;
+          color: var(--muted-foreground);
+          font-weight: 600;
+          letter-spacing: 0.05em;
+          margin-top: 32px;
+          margin-bottom: 12px;
+          padding-left: 12px;
+        }
+
+        /* Main Content */
+        .main-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          background-color: var(--muted);
+        }
+
+        /* Header */
+        .top-header {
+          height: var(--header-height);
+          background-color: var(--background);
+          border-bottom: 1px solid var(--border);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 40px;
+          position: sticky;
+          top: 0;
+          z-index: 10;
+        }
+
+        .search-container {
+          position: relative;
+          width: 360px;
+        }
+
+        .search-input {
+          width: 100%;
+          height: 42px;
+          padding-left: 44px;
+          padding-right: 16px;
+          border-radius: var(--radius-full);
+          border: 1px solid var(--border);
+          background-color: var(--input);
+          color: var(--foreground);
+          font-size: 14px;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+          border-color: var(--primary);
+        }
+
+        .search-icon {
+          position: absolute;
+          left: 16px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--muted-foreground);
+          pointer-events: none;
+        }
+
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: 24px;
+        }
+
+        .icon-btn {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--muted-foreground);
+          background: transparent;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+
+        .icon-btn:hover {
+          background-color: var(--secondary);
+          color: var(--foreground);
+        }
+
+        .user-profile {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          cursor: pointer;
+          padding: 6px 12px;
+          border-radius: var(--radius-full);
+          transition: background-color 0.2s;
+        }
+
+        .user-profile:hover {
+          background-color: var(--secondary);
+        }
+
+        .user-avatar {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 2px solid var(--background);
+          box-shadow: 0 0 0 1px var(--border);
+        }
+
+        .user-info {
+          display: flex;
+          flex-direction: column;
+          line-height: 1.3;
+        }
+
+        .user-name {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--foreground);
+        }
+
+        .user-role {
+          font-size: 11px;
+          color: var(--muted-foreground);
+        }
+
+        /* Dashboard Content */
+        .dashboard-scroll {
+          padding: 40px;
+          overflow-y: auto;
+          flex: 1;
+        }
+
+        .page-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 40px;
+        }
+
+        .page-title {
+          font-size: 28px;
+          font-weight: 700;
+          color: var(--foreground);
+          letter-spacing: -0.02em;
+        }
+
+        .date-filter {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 16px;
+          background: var(--background);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          font-size: 14px;
+          color: var(--foreground);
+          font-weight: 500;
+          cursor: pointer;
+          transition: border-color 0.2s;
+        }
+
+        .date-filter:hover {
+          border-color: var(--primary);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 24px;
+          margin-bottom: 40px;
+        }
+
+        .stat-card {
+          background: var(--card);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-xl);
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+        }
+
+        .stat-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .stat-label {
+          font-size: 14px;
+          color: var(--muted-foreground);
+          font-weight: 500;
+        }
+
+        .stat-icon-wrap {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background-color: var(--secondary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--foreground);
+        }
+
+        .stat-value {
+          font-size: 32px;
+          font-weight: 700;
+          color: var(--foreground);
+          letter-spacing: -0.02em;
+          line-height: 1;
+        }
+
+        .stat-trend {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          font-weight: 500;
+        }
+
+        .trend-up {
+          color: var(--success);
+          background-color: color-mix(in srgb, var(--success) 10%, transparent);
+          padding: 4px 8px;
+          border-radius: var(--radius-sm);
+        }
+
+        .trend-down {
+          color: var(--destructive);
+          background-color: color-mix(
+            in srgb,
+            var(--destructive) 10%,
+            transparent
+          );
+          padding: 4px 8px;
+          border-radius: var(--radius-sm);
+        }
+
+        /* Content Split */
+        .content-split {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          gap: 24px;
+        }
+
+        /* Card Sections */
+        .card-section {
+          background: var(--card);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-xl);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+        }
+
+        .card-header {
+          padding: 24px 32px;
+          border-bottom: 1px solid var(--border);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background-color: rgba(0, 0, 0, 0.01);
+        }
+
+        .card-title {
+          font-size: 18px;
+          font-weight: 600;
+          letter-spacing: -0.01em;
+        }
+
+        .view-all-btn {
+          font-size: 13px;
+          color: var(--primary);
+          font-weight: 600;
+          cursor: pointer;
+          padding: 6px 12px;
+          border-radius: var(--radius-md);
+        }
+
+        .view-all-btn:hover {
+          background-color: var(--secondary);
+        }
+
+        .table-container {
+          padding: 0;
+        }
+
+        .data-table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+
+        .data-table th {
+          text-align: left;
+          padding: 16px 32px;
+          font-size: 12px;
+          color: var(--muted-foreground);
+          font-weight: 600;
+          border-bottom: 1px solid var(--border);
+          background-color: var(--background);
+        }
+
+        .data-table td {
+          padding: 20px 32px;
+          font-size: 14px;
+          color: var(--foreground);
+          border-bottom: 1px solid var(--border);
+          vertical-align: middle;
+        }
+
+        .data-table tr:last-child td {
+          border-bottom: none;
+        }
+
+        .data-table tr:hover td {
+          background-color: var(--muted);
+        }
+
+        .user-cell {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .cell-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+
+        .cell-text {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .cell-name {
+          font-weight: 500;
+          color: var(--foreground);
+        }
+
+        .cell-sub {
+          font-size: 12px;
+          color: var(--muted-foreground);
+        }
+
+        .tour-name {
+          font-weight: 500;
+        }
+
+        .status-badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 6px 12px;
+          border-radius: 99px;
+          font-size: 12px;
+          font-weight: 500;
+          line-height: 1;
+        }
+
+        .status-confirmed {
+          background-color: color-mix(in srgb, var(--success) 15%, transparent);
+          color: var(--success-foreground);
+          border: 1px solid color-mix(in srgb, var(--success) 20%, transparent);
+        }
+
+        .status-pending {
+          background-color: color-mix(in srgb, var(--warning) 15%, transparent);
+          color: #b37400;
+          border: 1px solid color-mix(in srgb, var(--warning) 20%, transparent);
+        }
+
+        /* Destinations List */
+        .destinations-list {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .destination-item {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          padding: 20px 32px;
+          border-bottom: 1px solid var(--border);
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+
+        .destination-item:hover {
+          background-color: var(--muted);
+        }
+
+        .destination-item:last-child {
+          border-bottom: none;
+        }
+
+        .destination-thumb {
+          width: 72px;
+          height: 54px;
+          border-radius: var(--radius-md);
+          object-fit: cover;
+        }
+
+        .destination-info {
+          flex: 1;
+        }
+
+        .dest-name {
+          font-size: 15px;
+          font-weight: 600;
+          color: var(--foreground);
+          margin-bottom: 4px;
+        }
+
+        .dest-stat {
+          font-size: 13px;
+          color: var(--muted-foreground);
+        }
+
+        .dest-arrow {
+          color: var(--muted-foreground);
+          opacity: 0.5;
+          transition: opacity 0.2s;
+        }
+
+        .destination-item:hover .dest-arrow {
+          opacity: 1;
+          color: var(--primary);
+        }
+      </style>
+    </head>
+    <body>
+      <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+          <div class="logo-area">
+            <div class="logo-icon">
+              <div
+                style="
+                  width: 20px;
+                  height: 20px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <iconify-icon
+                  icon="lucide:compass"
+                  style="font-size: 20px; color: currentColor"
+                ></iconify-icon>
+              </div>
+            </div>
+            <div class="logo-text">TravelFlow</div>
+          </div>
+
+          <nav class="nav-menu">
+            <div class="nav-item active" data-media-type="banani-button">
+              <div
+                style="
+                  width: 20px;
+                  height: 20px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <iconify-icon
+                  icon="lucide:layout-dashboard"
+                  style="font-size: 20px; color: currentColor"
+                ></iconify-icon>
+              </div>
+              Dashboard
+            </div>
+            <div class="nav-item" data-media-type="banani-button">
+              <div
+                style="
+                  width: 20px;
+                  height: 20px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <iconify-icon
+                  icon="lucide:map"
+                  style="font-size: 20px; color: currentColor"
+                ></iconify-icon>
+              </div>
+              Tours
+            </div>
+            <div class="nav-item" data-media-type="banani-button">
+              <div
+                style="
+                  width: 20px;
+                  height: 20px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <iconify-icon
+                  icon="lucide:calendar"
+                  style="font-size: 20px; color: currentColor"
+                ></iconify-icon>
+              </div>
+              Bookings
+            </div>
+            <div class="nav-item" data-media-type="banani-button">
+              <div
+                style="
+                  width: 20px;
+                  height: 20px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <iconify-icon
+                  icon="lucide:users"
+                  style="font-size: 20px; color: currentColor"
+                ></iconify-icon>
+              </div>
+              Travelers
+            </div>
+
+            <div class="nav-section-label">Management</div>
+
+            <div class="nav-item" data-media-type="banani-button">
+              <div
+                style="
+                  width: 20px;
+                  height: 20px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <iconify-icon
+                  icon="lucide:briefcase"
+                  style="font-size: 20px; color: currentColor"
+                ></iconify-icon>
+              </div>
+              Partners
+            </div>
+            <div class="nav-item" data-media-type="banani-button">
+              <div
+                style="
+                  width: 20px;
+                  height: 20px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <iconify-icon
+                  icon="lucide:pie-chart"
+                  style="font-size: 20px; color: currentColor"
+                ></iconify-icon>
+              </div>
+              Financials
+            </div>
+            <div class="nav-item" data-media-type="banani-button">
+              <div
+                style="
+                  width: 20px;
+                  height: 20px;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <iconify-icon
+                  icon="lucide:settings"
+                  style="font-size: 20px; color: currentColor"
+                ></iconify-icon>
+              </div>
+              Settings
+            </div>
+          </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+          <header class="top-header">
+            <div class="search-container">
+              <div class="search-icon">
+                <div
+                  style="
+                    width: 16px;
+                    height: 16px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <iconify-icon
+                    icon="lucide:search"
+                    style="font-size: 16px; color: currentColor"
+                  ></iconify-icon>
+                </div>
+              </div>
+              <input
+                type="text"
+                class="search-input"
+                placeholder="Search tours, bookings, or travelers..."
+              />
+            </div>
+
+            <div class="header-actions">
+              <div class="icon-btn" data-media-type="banani-button">
+                <div
+                  style="
+                    width: 20px;
+                    height: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <iconify-icon
+                    icon="lucide:bell"
+                    style="font-size: 20px; color: currentColor"
+                  ></iconify-icon>
+                </div>
+              </div>
+              <div class="user-profile" data-media-type="banani-button">
+                <img
+                  src="https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F25-35%2FEuropean%2F4"
+                  alt="User"
+                  class="user-avatar"
+                />
+                <div class="user-info">
+                  <span class="user-name">Alex Morgan</span>
+                  <span class="user-role">Admin</span>
+                </div>
+                <div
+                  style="
+                    width: 16px;
+                    height: 16px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <iconify-icon
+                    icon="lucide:chevron-down"
+                    style="font-size: 16px; color: var(--muted-foreground)"
+                  ></iconify-icon>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <div class="dashboard-scroll">
+            <div class="page-header">
+              <h1 class="page-title">Dashboard Overview</h1>
+              <div class="date-filter" data-media-type="banani-button">
+                <div
+                  style="
+                    width: 16px;
+                    height: 16px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <iconify-icon
+                    icon="lucide:calendar"
+                    style="font-size: 16px; color: currentColor"
+                  ></iconify-icon>
+                </div>
+                Last 30 Days
+                <div
+                  style="
+                    width: 16px;
+                    height: 16px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                  "
+                >
+                  <iconify-icon
+                    icon="lucide:chevron-down"
+                    style="font-size: 16px; color: var(--muted-foreground)"
+                  ></iconify-icon>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-header">
+                  <span class="stat-label">Total Revenue</span>
+                  <div class="stat-icon-wrap">
+                    <div
+                      style="
+                        width: 18px;
+                        height: 18px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                      "
+                    >
+                      <iconify-icon
+                        icon="lucide:dollar-sign"
+                        style="font-size: 18px; color: currentColor"
+                      ></iconify-icon>
+                    </div>
+                  </div>
+                </div>
+                <div class="stat-value">$124,500</div>
+                <div class="stat-trend trend-up">
+                  <div
+                    style="
+                      width: 14px;
+                      height: 14px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                    "
+                  >
+                    <iconify-icon
+                      icon="lucide:trending-up"
+                      style="font-size: 14px; color: currentColor"
+                    ></iconify-icon>
+                  </div>
+                  +12.5%
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-header">
+                  <span class="stat-label">New Bookings</span>
+                  <div class="stat-icon-wrap">
+                    <div
+                      style="
+                        width: 18px;
+                        height: 18px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                      "
+                    >
+                      <iconify-icon
+                        icon="lucide:shopping-bag"
+                        style="font-size: 18px; color: currentColor"
+                      ></iconify-icon>
+                    </div>
+                  </div>
+                </div>
+                <div class="stat-value">342</div>
+                <div class="stat-trend trend-up">
+                  <div
+                    style="
+                      width: 14px;
+                      height: 14px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                    "
+                  >
+                    <iconify-icon
+                      icon="lucide:trending-up"
+                      style="font-size: 14px; color: currentColor"
+                    ></iconify-icon>
+                  </div>
+                  +4.2%
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-header">
+                  <span class="stat-label">Active Tours</span>
+                  <div class="stat-icon-wrap">
+                    <div
+                      style="
+                        width: 18px;
+                        height: 18px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                      "
+                    >
+                      <iconify-icon
+                        icon="lucide:map-pin"
+                        style="font-size: 18px; color: currentColor"
+                      ></iconify-icon>
+                    </div>
+                  </div>
+                </div>
+                <div class="stat-value">28</div>
+                <div class="stat-trend trend-down">
+                  <div
+                    style="
+                      width: 14px;
+                      height: 14px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                    "
+                  >
+                    <iconify-icon
+                      icon="lucide:trending-down"
+                      style="font-size: 14px; color: currentColor"
+                    ></iconify-icon>
+                  </div>
+                  -2.1%
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-header">
+                  <span class="stat-label">Total Travelers</span>
+                  <div class="stat-icon-wrap">
+                    <div
+                      style="
+                        width: 18px;
+                        height: 18px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                      "
+                    >
+                      <iconify-icon
+                        icon="lucide:users"
+                        style="font-size: 18px; color: currentColor"
+                      ></iconify-icon>
+                    </div>
+                  </div>
+                </div>
+                <div class="stat-value">1,284</div>
+                <div class="stat-trend trend-up">
+                  <div
+                    style="
+                      width: 14px;
+                      height: 14px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                    "
+                  >
+                    <iconify-icon
+                      icon="lucide:trending-up"
+                      style="font-size: 14px; color: currentColor"
+                    ></iconify-icon>
+                  </div>
+                  +8.3%
+                </div>
+              </div>
+            </div>
+
+            <!-- Main Content Split -->
+            <div class="content-split">
+              <!-- Recent Bookings Table -->
+              <div class="card-section">
+                <div class="card-header">
+                  <div class="card-title">Recent Bookings</div>
+                  <div class="view-all-btn" data-media-type="banani-button">
+                    View all bookings
+                  </div>
+                </div>
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 35%">Traveler</th>
+                        <th style="width: 25%">Tour Package</th>
+                        <th style="width: 20%">Date</th>
+                        <th style="width: 20%">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <div class="user-cell">
+                            <img
+                              src="https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSouth%20Asian%2F2"
+                              alt="User"
+                              class="cell-avatar"
+                            />
+                            <div class="cell-text">
+                              <span class="cell-name">Sarah Jenkins</span>
+                              <span class="cell-sub">ID: #8824</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span class="tour-name">Bali Island Retreat</span>
+                        </td>
+                        <td>Oct 24, 2024</td>
+                        <td>
+                          <span class="status-badge status-confirmed"
+                            >Confirmed</span
+                          >
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <div class="user-cell">
+                            <img
+                              src="https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F35-50%2FNorth%20American%2F3"
+                              alt="User"
+                              class="cell-avatar"
+                            />
+                            <div class="cell-text">
+                              <span class="cell-name">Michael Chen</span>
+                              <span class="cell-sub">ID: #8823</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span class="tour-name">Swiss Alps Hiking</span>
+                        </td>
+                        <td>Oct 23, 2024</td>
+                        <td>
+                          <span class="status-badge status-pending"
+                            >Pending</span
+                          >
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <div class="user-cell">
+                            <img
+                              src="https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F18-25%2FHispanic%2F1"
+                              alt="User"
+                              class="cell-avatar"
+                            />
+                            <div class="cell-text">
+                              <span class="cell-name">Maria Garcia</span>
+                              <span class="cell-sub">ID: #8822</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span class="tour-name">Kyoto Cultural Tour</span>
+                        </td>
+                        <td>Oct 22, 2024</td>
+                        <td>
+                          <span class="status-badge status-confirmed"
+                            >Confirmed</span
+                          >
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <div class="user-cell">
+                            <img
+                              src="https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F50-65%2FEuropean%2F5"
+                              alt="User"
+                              class="cell-avatar"
+                            />
+                            <div class="cell-text">
+                              <span class="cell-name">James Wilson</span>
+                              <span class="cell-sub">ID: #8821</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td><span class="tour-name">Safari Adventure</span></td>
+                        <td>Oct 21, 2024</td>
+                        <td>
+                          <span class="status-badge status-confirmed"
+                            >Confirmed</span
+                          >
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <div class="user-cell">
+                            <img
+                              src="https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FEast%20Asian%2F3"
+                              alt="User"
+                              class="cell-avatar"
+                            />
+                            <div class="cell-text">
+                              <span class="cell-name">Emily Wong</span>
+                              <span class="cell-sub">ID: #8820</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td><span class="tour-name">Paris Weekend</span></td>
+                        <td>Oct 20, 2024</td>
+                        <td>
+                          <span class="status-badge status-pending"
+                            >Pending</span
+                          >
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Popular Destinations -->
+              <div class="card-section">
+                <div class="card-header">
+                  <div class="card-title">Popular Destinations</div>
+                  <div class="view-all-btn" data-media-type="banani-button">
+                    See report
+                  </div>
+                </div>
+                <div class="destinations-list">
+                  <div class="destination-item" data-media-type="banani-button">
+                    <img
+                      data-aspect-ratio="4:3"
+                      data-query="scenic paris eiffel tower landscape"
+                      class="destination-thumb"
+                      alt="Paris"
+                      src="https://storage.googleapis.com/banani-generated-images/generated-images/fde9a335-d4fe-4d35-aea7-533a2b0b01ba.jpg"
+                    />
+                    <div class="destination-info">
+                      <div class="dest-name">Paris, France</div>
+                      <div class="dest-stat">1,240 visitors this month</div>
+                    </div>
+                    <div class="dest-arrow">
+                      <div
+                        style="
+                          width: 18px;
+                          height: 18px;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                        "
+                      >
+                        <iconify-icon
+                          icon="lucide:chevron-right"
+                          style="font-size: 18px; color: currentColor"
+                        ></iconify-icon>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="destination-item" data-media-type="banani-button">
+                    <img
+                      data-aspect-ratio="4:3"
+                      data-query="bali beach tropical resort"
+                      class="destination-thumb"
+                      alt="Bali"
+                      src="https://storage.googleapis.com/banani-generated-images/generated-images/b19f5103-16bd-4c05-a106-d5d433e65691.jpg"
+                    />
+                    <div class="destination-info">
+                      <div class="dest-name">Bali, Indonesia</div>
+                      <div class="dest-stat">985 visitors this month</div>
+                    </div>
+                    <div class="dest-arrow">
+                      <div
+                        style="
+                          width: 18px;
+                          height: 18px;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                        "
+                      >
+                        <iconify-icon
+                          icon="lucide:chevron-right"
+                          style="font-size: 18px; color: currentColor"
+                        ></iconify-icon>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="destination-item" data-media-type="banani-button">
+                    <img
+                      data-aspect-ratio="4:3"
+                      data-query="kyoto japan temple cherry blossom"
+                      class="destination-thumb"
+                      alt="Kyoto"
+                      src="https://storage.googleapis.com/banani-generated-images/generated-images/38180f39-b257-42e2-86ce-5445137a7c64.jpg"
+                    />
+                    <div class="destination-info">
+                      <div class="dest-name">Kyoto, Japan</div>
+                      <div class="dest-stat">850 visitors this month</div>
+                    </div>
+                    <div class="dest-arrow">
+                      <div
+                        style="
+                          width: 18px;
+                          height: 18px;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                        "
+                      >
+                        <iconify-icon
+                          icon="lucide:chevron-right"
+                          style="font-size: 18px; color: currentColor"
+                        ></iconify-icon>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="destination-item" data-media-type="banani-button">
+                    <img
+                      data-aspect-ratio="4:3"
+                      data-query="santorini greece architecture blue domes"
+                      class="destination-thumb"
+                      alt="Santorini"
+                      src="https://storage.googleapis.com/banani-generated-images/generated-images/d841a05a-b2f3-4e32-a96b-9afc27c11842.jpg"
+                    />
+                    <div class="destination-info">
+                      <div class="dest-name">Santorini, Greece</div>
+                      <div class="dest-stat">720 visitors this month</div>
+                    </div>
+                    <div class="dest-arrow">
+                      <div
+                        style="
+                          width: 18px;
+                          height: 18px;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                        "
+                      >
+                        <iconify-icon
+                          icon="lucide:chevron-right"
+                          style="font-size: 18px; color: currentColor"
+                        ></iconify-icon>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="destination-item" data-media-type="banani-button">
+                    <img
+                      data-aspect-ratio="4:3"
+                      data-query="new york city skyline central park"
+                      class="destination-thumb"
+                      alt="NYC"
+                      src="https://storage.googleapis.com/banani-generated-images/generated-images/6d83c4ac-a095-4f1d-ba0d-e9ba6cd6dde4.jpg"
+                    />
+                    <div class="destination-info">
+                      <div class="dest-name">New York, USA</div>
+                      <div class="dest-stat">690 visitors this month</div>
+                    </div>
+                    <div class="dest-arrow">
+                      <div
+                        style="
+                          width: 18px;
+                          height: 18px;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                        "
+                      >
+                        <iconify-icon
+                          icon="lucide:chevron-right"
+                          style="font-size: 18px; color: currentColor"
+                        ></iconify-icon>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </body>
+  </html>
+  <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+  <style>
+    :root {
+      --background: #f6fbff;
+      --foreground: #0f1724;
+      --border: #00000014;
+      --input: #ffffff;
+      --primary: #0b76ff;
+      --primary-foreground: #ffffff;
+      --secondary: #e8f4ff;
+      --secondary-foreground: #0b66cc;
+      --muted: #f3f5f7;
+      --muted-foreground: #94a3b8;
+      --success: #10b981;
+      --success-foreground: #ffffff;
+      --accent: #ffb24d;
+      --accent-foreground: #102029;
+      --destructive: #ef4444;
+      --destructive-foreground: #ffffff;
+      --warning: #f59e0b;
+      --warning-foreground: #102029;
+      --card: #ffffff;
+      --card-foreground: #0f1724;
+      --sidebar: #eaf4ff;
+      --sidebar-foreground: #07345a;
+      --sidebar-primary: #0b76ff;
+      --sidebar-primary-foreground: #ffffff;
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --radius-xl: 12px;
+      --font-family-body: Inter;
+    }
+  </style>
+</div>
