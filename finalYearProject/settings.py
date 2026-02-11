@@ -134,5 +134,5 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # For login & logout redirection
 LOGIN_URL='/accounts/login' #///here we enter the url of login page
-LOGIN_REDIRECT_URL = "/" #/here we enter the url where we want to redirect after login
-LOGOUT_REDIRECT_URL = "/"   #/here we enter the url where we want to redirect after logout
+LOGIN_REDIRECT_URL = "/index/" #/here we enter the url where we want to redirect after login
+LOGOUT_REDIRECT_URL = "/index/"   #/here we enter the url where we want to redirect after logout

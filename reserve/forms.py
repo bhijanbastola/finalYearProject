@@ -15,8 +15,8 @@ class ResturantForm(forms.ModelForm):
         fields = ['name', 'destination', 'email', 'phone', 'cuisine_type', 'average_cost', 'is_open']
 
 
-    class CustomerRegistrationForm(UserCreationForm):
-       email = forms.EmailField(required=True)
+class CustomerRegistrationForm(UserCreationForm):
+    email = forms.EmailField(required=True)
 
     class Meta:
         model = User
