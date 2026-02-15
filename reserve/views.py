@@ -16,19 +16,20 @@ def dashboard(request):
 
 def register(request):
     if request.method == "POST":
-       form=CustomerRegistrationForm(request.POST)
-       if form.is_valid():
-           user=form.save(commit=False)
-           user.email=form.cleaned_data['email']
-           username=form.cleaned_data['username']
-           user.set_password(form.cleaned_data['password1'])
-           user.save()
-           login(request, user)
-           return redirect('index')
-       else:
-           form=CustomerRegistrationForm()
+        form = CustomerRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.email = form.cleaned_data['email']
+            username = form.cleaned_data['username']
+            user.set_password(form.cleaned_data['password1'])
+            user.save()
+            login(request, user)
+            return redirect('index')
+       
     else:
-           return render(request, 'register.html', {'form': form})
+        form = CustomerRegistrationForm()  # Empty form for GET requests
+
+    return render(request, 'registration/register.html', {'form': form})
 
 
 

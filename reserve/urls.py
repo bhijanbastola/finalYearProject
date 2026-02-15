@@ -7,6 +7,7 @@ urlpatterns = [
     path("base/", views.base, name="base"),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("register/", views.register, name="register"),
+    
     #path("reserve/", views.reserve, name="reserve"),
     
 ]

@@ -1,0 +1,20 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+</head>
+<body>
+    <h2>Login</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Log In</button>
+    </form>
+    <p>Don't have an account?<a href="{% url 'register' %}"> Register here</a></p>
+    {% comment %} Add a link to the password reset page.{% endcomment %}
+    <p><a href="{% url 'password_reset' %}">Forgot password?</a></p>  
+</body>
+</html>
