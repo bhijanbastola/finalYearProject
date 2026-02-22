@@ -16,11 +16,21 @@ class RestaurantForm(forms.ModelForm):
 
 
 class CustomerRegistrationForm(UserCreationForm):
-    email = forms.EmailField(required=True)
+    email = forms.EmailField(required=True, help_text='Required. Enter a valid email address.')
+    role = forms.ChoiceField(
+        choices=[
+            ('customer', 'Customer'),
+            ('hotel_owner', 'Hotel Owner'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-control'}) 
+        # widget=forms.RadioSelect   # shows as radio buttons, you can use Select too
+    )
 
     class Meta:
         model = User
         fields = ('username', 'email', 'password1', 'password2')
+    
+    
 
     
 class CustomerForm(forms.ModelForm):

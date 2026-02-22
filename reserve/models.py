@@ -1,7 +1,37 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.contrib.auth.models import User
+
+# =====================================================
+# User Profile 
+# =====================================================
+class UserProfile(models.Model):
+    ROLE_CHOICES = (
+        ('hotel_owner', 'Hotel Owner'),
+        ('customer', 'Customer'),
+    )
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
 
 
+#to get hotels from the api and save to database
+
+class Hotel(models.Model):
+    name      = models.CharField(max_length=255)
+    location  = models.CharField(max_length=255, blank=True)
+    address   = models.CharField(max_length=255, blank=True)
+    phone     = models.CharField(max_length=50,  blank=True)
+    website   = models.URLField(blank=True)
+    lat       = models.FloatField(null=True, blank=True)
+    lng       = models.FloatField(null=True, blank=True)
+    image_url = models.URLField(blank=True, null=True)  
+    def __str__(self):
+  
+        return self.name
+    
+
+
+    #old models 
 # =====================================================
 # DESTINATION
 # =====================================================
@@ -73,7 +103,7 @@ class Restaurant(models.Model):
 class Hotel(models.Model):
     name = models.CharField(max_length=100)
     destination = models.ForeignKey(Destination, on_delete=models.CASCADE, related_name='hotels')
-    phone = models.CharField(max_length=15)
+    phone = models.CharField(max_length=15,)
     price_per_night = models.DecimalField(max_digits=8, decimal_places=2)
     is_available = models.BooleanField(default=True)
 
