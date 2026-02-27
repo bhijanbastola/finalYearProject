@@ -27,4 +27,5 @@ urlpatterns = [
     path('', lambda request: redirect('reserve/'),name='home'),  # Redirect root to reserve app
     path("reserve/", include("reserve.urls")),
     path("accounts/", include('django.contrib.auth.urls')),
+    path('reserve/notifications/', include('notifications.urls', namespace='notifications')),  # Add this line for notifications
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
