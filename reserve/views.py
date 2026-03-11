@@ -206,4 +206,14 @@ def hotelOwnerdetails(request):
     return render(request, 'hotel_owner_details.html', {'hotel_owner': hotel_owner})
 
 
+def destinations(request):
+    return render(request, 'destinations.html')
+def comments(request):
+    return render(request, 'comments.html')
+def gallery(request):
+    return render(request, 'gallery.html')
+def packages(request): 
+    return render(request, 'packages.html')
+def route(request):
+    return render(request, 'route.html')
 

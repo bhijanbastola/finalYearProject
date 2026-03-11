@@ -29,3 +29,5 @@ urlpatterns = [
     path("accounts/", include('django.contrib.auth.urls')),
     path('reserve/maps/', include('maps.urls')),  # Add this line for maps
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    
+
