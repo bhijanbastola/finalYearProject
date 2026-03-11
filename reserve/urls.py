@@ -16,5 +16,10 @@ urlpatterns = [
     path("customer/details/", views.customerDetails, name="customer_details"),
     path('hotel_owner/details/', views.hotelOwnerdetails, name='hotel_owner_details'),
     #path("reserve/", views.reserve, name="reserve"),
+    path("destinations/", views.destinations, name="destinations"),
+    path("comments/", views.comments, name="comments"),
+    path("gallery/", views.gallery, name="gallery"),
+    path("packages/", views.packages, name="packages"),
+    path("route/", views.route, name="route"),
     
 ] 

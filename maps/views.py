@@ -460,4 +460,4 @@ def get_route_details(request, route_id):
     
     return JsonResponse(data)
 
-# Create your views here.
+
