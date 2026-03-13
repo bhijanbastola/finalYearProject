@@ -27,29 +27,7 @@
 
     <!-- Page Content Goes Here -->
     {% block content %}
-    <form class="d-flex" role="search" action="{% url 'search' %}" method="get">
-        {% csrf_token %}
-        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" name="query">
-        <button class="btn btn-outline-success" type="submit" >Search</button>
-      </form>
-      {% if user.is_authenticated %}
-      <form action="" method="get">
-        {% csrf_token %}
-        {{user.username}}
-        </form>
-      
-      <form action="{% url 'logout' %}" method="post">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-danger">Logout</button>
-      
-      </form>
-
-       {% else %}
-      <a href="{% url "register" %}" class="btn btn-warning">Register</a>
-      <a href="{% url "login" %}" class="btn btn-success">Login</a> 
-
-      
-      {% endif %}
+    
     {% endblock %}
     
     {% include 'components/footer.html' %}
