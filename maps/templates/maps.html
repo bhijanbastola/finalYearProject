@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tourism Route Planner</title>
+    <title>Tourism Route Planner - Complete</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -19,8 +19,8 @@
         .section h3 { color: #667eea; margin-bottom: 15px; font-size: 1.1em; }
         .form-group { margin-bottom: 15px; position: relative; }
         .form-group label { display: block; margin-bottom: 6px; font-weight: 600; color: #495057; font-size: 0.9em; }
-        .form-group select, .form-group input { width: 100%; padding: 10px 12px; border: 2px solid #dee2e6; border-radius: 6px; font-size: 0.95em; transition: all 0.3s; }
-        .form-group select:focus, .form-group input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 2px solid #dee2e6; border-radius: 6px; font-size: 0.95em; transition: all 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
         .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #667eea; border-top: none; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
         .autocomplete-dropdown.show { display: block; }
         .autocomplete-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; transition: background 0.2s; }
@@ -61,23 +61,18 @@
         .stops-list { margin-top: 10px; max-height: 150px; overflow-y: auto; }
         .stop-item { padding: 6px 10px; background: #f8f9fa; margin: 4px 0; border-radius: 4px; font-size: 0.85em; display: flex; align-items: center; gap: 8px; }
         .stop-icon { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
-        .clickable-list { max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 6px; }
-        .clickable-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; transition: all 0.2s; }
-        .clickable-item:hover { background: #e7f3ff; }
-        .clickable-item:last-child { border-bottom: none; }
-        .clickable-item strong { color: #667eea; display: block; margin-bottom: 4px; }
-        .clickable-item small { color: #6c757d; font-size: 0.85em; }
         .status-message { padding: 12px; border-radius: 6px; margin-bottom: 15px; display: none; }
         .status-message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .status-message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .status-message.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .hidden { display: none; }
         @media (max-width: 968px) { .container { grid-template-columns: 1fr; height: auto; } #map { height: 60vh; } }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>🗺️ Tourism Route Planner</h1>
-        <p>Dropdown Start, Search Destination, Click Attractions, Blue=Shortest, Red=Alternatives</p>
+        <p>Type place → See attractions dropdown → Click dropdown OR map → Check/Uncheck to show/hide markers</p>
     </div>
 
     <div class="container">
@@ -95,51 +90,57 @@
             </div>
 
             <div class="section">
-                <h3>📍 Select Starting Location</h3>
+                <h3>📍 Starting Location</h3>
                 <div class="form-group">
-                    <label>Choose from dropdown:</label>
-                    <select id="startSelect" onchange="selectStartFromDropdown()">
-                        <option value="">-- Select a location --</option>
-                        <optgroup label="🏛️ Tourist Attractions" id="attractionsGroup"></optgroup>
-                        <optgroup label="⚡ EV Charging Stations" id="evStationsGroup"></optgroup>
-                    </select>
+                    <label>Type place name or click on map:</label>
+                    <input type="text" id="startSearch" placeholder="Search place (e.g., Kathmandu, Pokhara)" autocomplete="off">
+                    <div class="autocomplete-dropdown" id="startDropdown"></div>
                     <div id="startSelected"></div>
                 </div>
-            </div>
+                
+                 <div class="form-group hidden" id="startAttractionsGroup">
+                    {% comment %} <label>Or select specific attraction/EV station:</label>
+                    <select id="startAttractionSelect" onchange="selectFromStartDropdown()">
+                        <option value="">-- Select from list --</option>
+                    </select> {% endcomment %}
+                </div>
+            </div> 
 
             <div class="section">
-                <h3>🎯 Search Destination</h3>
+                <h3>🎯 Destination</h3>
                 <div class="form-group">
-                    <label>Type to search:</label>
-                    <input type="text" id="endSearch" placeholder="Search city or place (e.g., Lumbini, Pokhara)" autocomplete="off">
+                    <label>Type place name or click on map:</label>
+                    <input type="text" id="endSearch" placeholder="Search place (e.g., Lumbini, Chitwan)" autocomplete="off">
                     <div class="autocomplete-dropdown" id="endDropdown"></div>
                     <div id="endSelected"></div>
                 </div>
+                
+                <div class="form-group hidden" id="endAttractionsGroup">
+                    <label>Or select specific attraction/EV station:</label>
+                    <select id="endAttractionSelect" onchange="selectFromEndDropdown()">
+                        <option value="">-- Select from list --</option>
+                    </select>
+                </div>
             </div>
 
             <div class="section">
-                <h3>⚙️ Route Options</h3>
+                <h3>⚙️ Display Options</h3>
                 <div class="checkbox-group">
                     <label>
-                        <input type="checkbox" id="includeAttractions" checked>
-                        Include tourist attractions in route
+                        <input type="checkbox" id="showAttractions" checked onchange="toggleAttractionMarkers()">
+                        Show tourist attractions on map
                     </label>
                 </div>
                 <div class="checkbox-group">
                     <label>
-                        <input type="checkbox" id="includeEVStations" checked>
-                        Include EV charging stations in route
+                        <input type="checkbox" id="showEVStations" checked onchange="toggleEVMarkers()">
+                        Show EV charging stations on map
                     </label>
                 </div>
-                <button class="btn btn-primary" id="calculateBtn" onclick="calculateRoute()" disabled>
+                <button class="btn btn-primary" id="calculateBtn" onclick="calculateRoute()">
                     🧭 Calculate Routes
                 </button>
                 <button class="btn btn-danger" onclick="clearAll()">🗑️ Clear All</button>
-            </div>
-
-            <div class="section">
-                <h3>📋 Click Attraction to Get Route</h3>
-                <div class="clickable-list" id="attractionsList"></div>
             </div>
 
             <div class="loading" id="loadingIndicator">
@@ -157,9 +158,9 @@
 
     <script>
         let map, startLocation = null, endLocation = null;
-        let markers = [], polylines = [];
-        let allAttractions = [], allEVStations = [];
+        let routePolylines = [], attractionMarkers = [], evMarkers = [];
         let searchTimeout = null;
+        let clickMode = 'none'; // 'start', 'end', or 'none'
 
         function initMap() {
             map = L.map('map').setView([27.7172, 85.3240], 7);
@@ -168,119 +169,55 @@
                 maxZoom: 19,
             }).addTo(map);
 
-            loadAllLocations();
-        }
-
-        function loadAllLocations() {
-            fetch('/reserve/maps/api/all-locations-list/')
-                .then(r => r.json())
-                .then(data => {
-                    allAttractions = data.attractions;
-                    allEVStations = data.ev_stations;
-                    populateStartDropdown();
-                    populateClickableList();
-                })
-                .catch(e => console.error('Error loading locations:', e));
-        }
-
-        function populateStartDropdown() {
-            const attractionsGroup = document.getElementById('attractionsGroup');
-            const evStationsGroup = document.getElementById('evStationsGroup');
-
-            allAttractions.forEach(attr => {
-                const option = document.createElement('option');
-                option.value = JSON.stringify({
-                    id: attr.id,
-                    name: attr.name,
-                    latitude: attr.latitude,
-                    longitude: attr.longitude,
-                    type: 'attraction',
-                    category: attr.category
-                });
-                option.textContent = `${attr.name} (${attr.category || 'attraction'})`;
-                attractionsGroup.appendChild(option);
+            // Map click handler
+            map.on('click', function(e) {
+                if (clickMode === 'start') {
+                    setLocationFromMap(e.latlng, 'start');
+                } else if (clickMode === 'end') {
+                    setLocationFromMap(e.latlng, 'end');
+                }
             });
 
-            allEVStations.forEach(station => {
-                const option = document.createElement('option');
-                option.value = JSON.stringify({
-                    id: station.id,
-                    name: station.name,
-                    latitude: station.latitude,
-                    longitude: station.longitude,
-                    type: 'ev_station',
-                    charger_type: station.charger_type
-                });
-                option.textContent = `${station.name} (${station.charger_type || 'EV'})`;
-                evStationsGroup.appendChild(option);
-            });
+            showStatus('Click on map after selecting "Start" or "Destination" to set location', 'info');
         }
 
-        function populateClickableList() {
-            const list = document.getElementById('attractionsList');
-            list.innerHTML = '';
-
-            [...allAttractions, ...allEVStations].forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'clickable-item';
-                div.onclick = () => clickAttraction(item);
-                
-                const icon = item.category ? '🏛️' : '⚡';
-                div.innerHTML = `
-                    <strong>${icon} ${item.name}</strong>
-                    <small>${item.address || item.category || item.charger_type || ''}</small>
-                `;
-                list.appendChild(div);
-            });
-        }
-
-        function clickAttraction(item) {
-            if (!startLocation) {
-                showStatus('Please select a starting location first!', 'error');
-                return;
-            }
-
-            endLocation = {
-                id: item.id,
-                name: item.name,
-                latitude: item.latitude,
-                longitude: item.longitude,
-                type: item.category ? 'attraction' : 'ev_station'
+        function setLocationFromMap(latlng, type) {
+            const location = {
+                name: `Selected on map`,
+                latitude: latlng.lat,
+                longitude: latlng.lng,
+                type: 'map_click'
             };
 
-            document.getElementById('endSearch').value = item.name;
-            document.getElementById('endSelected').innerHTML = 
-                `<div class="selected-location"><strong>✓ ${item.name}</strong><br>
-                <small>📍 ${item.latitude.toFixed(4)}, ${item.longitude.toFixed(4)}</small></div>`;
-
-            document.getElementById('calculateBtn').disabled = false;
-            showStatus(`Ready to calculate route to ${item.name}!`, 'success');
-        }
-
-        function selectStartFromDropdown() {
-            const select = document.getElementById('startSelect');
-            const value = select.value;
-
-            if (!value) {
-                startLocation = null;
-                document.getElementById('startSelected').innerHTML = '';
-                document.getElementById('calculateBtn').disabled = true;
-                return;
+            if (type === 'start') {
+                startLocation = location;
+                document.getElementById('startSearch').value = `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`;
+                document.getElementById('startSelected').innerHTML = 
+                    `<div class="selected-location"><strong>✓ Map Location</strong><br>
+                    <small>📍 ${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}</small></div>`;
+                document.getElementById('startAttractionsGroup').classList.add('hidden');
+                clickMode = 'end';
+                showStatus('Start set! Now click map or search for destination.', 'success');
+            } else {
+                endLocation = location;
+                document.getElementById('endSearch').value = `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`;
+                document.getElementById('endSelected').innerHTML = 
+                    `<div class="selected-location"><strong>✓ Map Location</strong><br>
+                    <small>📍 ${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}</small></div>`;
+                document.getElementById('endAttractionsGroup').classList.add('hidden');
+                clickMode = 'none';
+                showStatus('Destination set! Ready to calculate.', 'success');
             }
 
-            startLocation = JSON.parse(value);
-            document.getElementById('startSelected').innerHTML = 
-                `<div class="selected-location"><strong>✓ ${startLocation.name}</strong><br>
-                <small>📍 ${startLocation.latitude.toFixed(4)}, ${startLocation.longitude.toFixed(4)}</small></div>`;
-
-            if (endLocation) {
+            if (startLocation && endLocation) {
                 document.getElementById('calculateBtn').disabled = false;
             }
         }
 
-        function searchLocation(query) {
+        function searchLocation(query, type) {
             if (query.length < 2) {
-                document.getElementById('endDropdown').classList.remove('show');
+                const dropdown = type === 'start' ? 'startDropdown' : 'endDropdown';
+                document.getElementById(dropdown).classList.remove('show');
                 return;
             }
 
@@ -288,13 +225,14 @@
             searchTimeout = setTimeout(() => {
                 fetch(`/reserve/maps/api/search-location/?q=${encodeURIComponent(query)}`)
                     .then(r => r.json())
-                    .then(data => displayAutocomplete(data.results))
+                    .then(data => displayAutocomplete(data.results, type))
                     .catch(e => console.error('Search error:', e));
             }, 300);
         }
 
-        function displayAutocomplete(results) {
-            const dropdown = document.getElementById('endDropdown');
+        function displayAutocomplete(results, type) {
+            const dropdownId = type === 'start' ? 'startDropdown' : 'endDropdown';
+            const dropdown = document.getElementById(dropdownId);
             
             if (results.length === 0) {
                 dropdown.classList.remove('show');
@@ -304,7 +242,7 @@
             let html = '';
             results.forEach(r => {
                 const icon = r.type === 'city' ? '🏙️' : (r.type === 'attraction' ? '🏛️' : '⚡');
-                html += `<div class="autocomplete-item" onclick='selectDestination(${JSON.stringify(r)})'>
+                html += `<div class="autocomplete-item" onclick='selectLocation(${JSON.stringify(r)}, "${type}")'>
                     <strong>${icon} ${r.name}</strong>
                     <small>${r.address || ''}</small>
                 </div>`;
@@ -314,16 +252,114 @@
             dropdown.classList.add('show');
         }
 
-        function selectDestination(location) {
+        function selectLocation(location, type) {
+            if (type === 'start') {
+                startLocation = location;
+                document.getElementById('startSearch').value = location.name;
+                document.getElementById('startSelected').innerHTML = 
+                    `<div class="selected-location"><strong>✓ ${location.name}</strong><br>
+                    <small>📍 ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}</small></div>`;
+                document.getElementById('startDropdown').classList.remove('show');
+                
+                // Load attractions/EV stations near this location
+                loadNearbyLocations(location.latitude, location.longitude, 'start');
+                clickMode = 'end';
+            } else {
+                endLocation = location;
+                document.getElementById('endSearch').value = location.name;
+                document.getElementById('endSelected').innerHTML = 
+                    `<div class="selected-location"><strong>✓ ${location.name}</strong><br>
+                    <small>📍 ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}</small></div>`;
+                document.getElementById('endDropdown').classList.remove('show');
+                
+                // Load attractions/EV stations near this location
+                loadNearbyLocations(location.latitude, location.longitude, 'end');
+                clickMode = 'none';
+            }
+
+            if (startLocation && endLocation) {
+                document.getElementById('calculateBtn').disabled = false;
+            }
+        }
+
+        function loadNearbyLocations(lat, lng, type) {
+            fetch(`/reserve/maps/api/locations-near/?lat=${lat}&lng=${lng}&radius=20`)
+                .then(r => r.json())
+                .then(data => {
+                    const selectId = type === 'start' ? 'startAttractionSelect' : 'endAttractionSelect';
+                    const groupId = type === 'start' ? 'startAttractionsGroup' : 'endAttractionsGroup';
+                    const select = document.getElementById(selectId);
+                    
+                    select.innerHTML = '<option value="">-- Select from list --</option>';
+                    
+                    if (data.attractions.length > 0) {
+                        const optgroup = document.createElement('optgroup');
+                        optgroup.label = '🏛️ Tourist Attractions';
+                        data.attractions.forEach(attr => {
+                            const option = document.createElement('option');
+                            option.value = JSON.stringify({
+                                name: attr.name,
+                                latitude: attr.latitude,
+                                longitude: attr.longitude,
+                                type: 'attraction'
+                            });
+                            option.textContent = `${attr.name} (${attr.distance}km away)`;
+                            optgroup.appendChild(option);
+                        });
+                        select.appendChild(optgroup);
+                    }
+                    
+                    if (data.ev_stations.length > 0) {
+                        const optgroup = document.createElement('optgroup');
+                        optgroup.label = '⚡ EV Charging Stations';
+                        data.ev_stations.forEach(station => {
+                            const option = document.createElement('option');
+                            option.value = JSON.stringify({
+                                name: station.name,
+                                latitude: station.latitude,
+                                longitude: station.longitude,
+                                type: 'ev_station'
+                            });
+                            option.textContent = `${station.name} (${station.distance}km away)`;
+                            optgroup.appendChild(option);
+                        });
+                        select.appendChild(optgroup);
+                    }
+                    
+                    // Show the dropdown
+                    document.getElementById(groupId).classList.remove('hidden');
+                })
+                .catch(e => console.error('Error loading nearby locations:', e));
+        }
+
+        function selectFromStartDropdown() {
+            const select = document.getElementById('startAttractionSelect');
+            if (!select.value) return;
+            
+            const location = JSON.parse(select.value);
+            startLocation = location;
+            document.getElementById('startSearch').value = location.name;
+            document.getElementById('startSelected').innerHTML = 
+                `<div class="selected-location"><strong>✓ ${location.name}</strong><br>
+                <small>📍 ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}</small></div>`;
+            
+            if (startLocation && endLocation) {
+                document.getElementById('calculateBtn').disabled = false;
+            }
+        }
+
+        function selectFromEndDropdown() {
+            const select = document.getElementById('endAttractionSelect');
+            if (!select.value) return;
+            
+            const location = JSON.parse(select.value);
             endLocation = location;
             document.getElementById('endSearch').value = location.name;
             document.getElementById('endSelected').innerHTML = 
                 `<div class="selected-location"><strong>✓ ${location.name}</strong><br>
                 <small>📍 ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}</small></div>`;
             
-            document.getElementById('endDropdown').classList.remove('show');
-            
-            if (startLocation) {
+            if (startLocation && endLocation) {
                 document.getElementById('calculateBtn').disabled = false;
             }
         }
@@ -334,16 +370,15 @@
                 return;
             }
 
-            markers.forEach(m => map.removeLayer(m));
-            polylines.forEach(p => map.removeLayer(p));
-            markers = [];
-            polylines = [];
+            // Clear old routes
+            routePolylines.forEach(p => map.removeLayer(p));
+            routePolylines = [];
 
             document.getElementById('loadingIndicator').classList.add('active');
             document.getElementById('resultsSection').classList.remove('active');
 
-            const includeAttractions = document.getElementById('includeAttractions').checked;
-            const includeEVStations = document.getElementById('includeEVStations').checked;
+            const showAttractions = document.getElementById('showAttractions').checked;
+            const showEV = document.getElementById('showEVStations').checked;
 
             try {
                 const response = await fetch('/reserve/maps/api/calculate-route-with-roads/', {
@@ -356,8 +391,8 @@
                         end_lat: endLocation.latitude,
                         end_lng: endLocation.longitude,
                         end_name: endLocation.name,
-                        include_attractions: includeAttractions,
-                        include_ev_stations: includeEVStations
+                        include_attractions: showAttractions,
+                        include_ev_stations: showEV
                     })
                 });
 
@@ -383,38 +418,75 @@
             const attractionIcon = L.divIcon({className: '', html: '<div style="background:#ff6b6b;width:20px;height:20px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>'});
             const evIcon = L.divIcon({className: '', html: '<div style="background:#4ecdc4;width:20px;height:20px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>'});
 
+            // Clear old markers
+            attractionMarkers.forEach(m => map.removeLayer(m));
+            evMarkers.forEach(m => map.removeLayer(m));
+            attractionMarkers = [];
+            evMarkers = [];
+
+            // Add start/end markers
             const startMarker = L.marker([startLocation.latitude, startLocation.longitude], {icon: startIcon})
                 .addTo(map).bindPopup(`<b>🟢 Start: ${startLocation.name}</b>`);
-            markers.push(startMarker);
+            attractionMarkers.push(startMarker);
 
             const endMarker = L.marker([endLocation.latitude, endLocation.longitude], {icon: endIcon})
                 .addTo(map).bindPopup(`<b>🔴 End: ${endLocation.name}</b>`);
-            markers.push(endMarker);
+            attractionMarkers.push(endMarker);
 
+            // Add attraction/EV markers (controlled by checkboxes)
             data.shortest_route.stops.forEach(stop => {
                 if (stop.type === 'attraction') {
                     const m = L.marker([stop.latitude, stop.longitude], {icon: attractionIcon})
-                        .addTo(map).bindPopup(`<b>🏛️ ${stop.name}</b>`);
-                    markers.push(m);
+                        .bindPopup(`<b>🏛️ ${stop.name}</b>`);
+                    if (document.getElementById('showAttractions').checked) {
+                        m.addTo(map);
+                    }
+                    attractionMarkers.push(m);
                 } else if (stop.type === 'ev_station') {
                     const m = L.marker([stop.latitude, stop.longitude], {icon: evIcon})
-                        .addTo(map).bindPopup(`<b>⚡ ${stop.name}</b>`);
-                    markers.push(m);
+                        .bindPopup(`<b>⚡ ${stop.name}</b>`);
+                    if (document.getElementById('showEVStations').checked) {
+                        m.addTo(map);
+                    }
+                    evMarkers.push(m);
                 }
             });
 
+            // Draw routes
             const shortestCoords = data.shortest_route.coordinates.map(c => [c[1], c[0]]);
             const shortestLine = L.polyline(shortestCoords, {color: '#4285f4', weight: 6, opacity: 0.8}).addTo(map);
-            polylines.push(shortestLine);
+            routePolylines.push(shortestLine);
 
             data.alternative_routes.forEach(route => {
                 const altCoords = route.coordinates.map(c => [c[1], c[0]]);
                 const altLine = L.polyline(altCoords, {color: '#ea4335', weight: 4, opacity: 0.6, dashArray: '10, 10'}).addTo(map);
-                polylines.push(altLine);
+                routePolylines.push(altLine);
             });
 
             map.fitBounds(shortestLine.getBounds(), {padding: [50, 50]});
             displayResults(data);
+        }
+
+        function toggleAttractionMarkers() {
+            const show = document.getElementById('showAttractions').checked;
+            attractionMarkers.forEach(m => {
+                if (show) {
+                    m.addTo(map);
+                } else {
+                    map.removeLayer(m);
+                }
+            });
+        }
+
+        function toggleEVMarkers() {
+            const show = document.getElementById('showEVStations').checked;
+            evMarkers.forEach(m => {
+                if (show) {
+                    m.addTo(map);
+                } else {
+                    map.removeLayer(m);
+                }
+            });
         }
 
         function displayResults(data) {
@@ -458,8 +530,6 @@
                         </div>
                     </div>`;
                 });
-            } else {
-                html += '<p style="color:#6c757d;margin-top:10px;font-size:0.9em;">No alternative routes found. Try different locations.</p>';
             }
 
             resultsDiv.innerHTML = html;
@@ -469,16 +539,23 @@
         function clearAll() {
             startLocation = null;
             endLocation = null;
-            document.getElementById('startSelect').value = '';
+            clickMode = 'none';
+            document.getElementById('startSearch').value = '';
             document.getElementById('endSearch').value = '';
             document.getElementById('startSelected').innerHTML = '';
             document.getElementById('endSelected').innerHTML = '';
+            document.getElementById('startAttractionsGroup').classList.add('hidden');
+            document.getElementById('endAttractionsGroup').classList.add('hidden');
             document.getElementById('calculateBtn').disabled = true;
             document.getElementById('resultsSection').classList.remove('active');
-            markers.forEach(m => map.removeLayer(m));
-            polylines.forEach(p => map.removeLayer(p));
-            markers = [];
-            polylines = [];
+            
+            routePolylines.forEach(p => map.removeLayer(p));
+            attractionMarkers.forEach(m => map.removeLayer(m));
+            evMarkers.forEach(m => map.removeLayer(m));
+            routePolylines = [];
+            attractionMarkers = [];
+            evMarkers = [];
+            
             showStatus('Cleared. Select new locations.', 'info');
         }
 
@@ -505,10 +582,15 @@
             return cookieValue;
         }
 
-        document.getElementById('endSearch').addEventListener('input', e => searchLocation(e.target.value));
+        document.getElementById('startSearch').addEventListener('input', e => searchLocation(e.target.value, 'start'));
+        document.getElementById('endSearch').addEventListener('input', e => searchLocation(e.target.value, 'end'));
+        
+        document.getElementById('startSearch').addEventListener('focus', () => { clickMode = 'start'; });
+        document.getElementById('endSearch').addEventListener('focus', () => { clickMode = 'end'; });
+        
         document.addEventListener('click', e => {
             if (!e.target.closest('.form-group')) {
-                document.getElementById('endDropdown').classList.remove('show');
+                document.querySelectorAll('.autocomplete-dropdown').forEach(el => el.classList.remove('show'));
             }
         });
 

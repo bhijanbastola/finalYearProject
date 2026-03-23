@@ -1,5 +1,5 @@
 # maps/views.py
-# FINAL VERSION - Dropdown start locations, clickable lists, checkboxes for options
+# CORRECT VERSION - Dropdowns show attractions/EV of selected place, clickable map
 
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
@@ -17,27 +17,61 @@ class MapView(TemplateView):
     template_name = 'maps.html'
 
 
-def get_all_attractions_and_stations(request):
+def get_attractions_and_stations_by_location(request):
     """
-    Get all tourist attractions and EV stations for dropdowns
-    GET /maps/api/all-locations-list/
+    Get attractions and EV stations near a specific location
+    GET /maps/api/locations-near/?lat=27.7&lng=85.3&radius=20
     """
-    attractions = TouristAttraction.objects.filter(is_active=True).order_by('name').values(
-        'id', 'name', 'latitude', 'longitude', 'category', 'rating', 'address'
-    )
-    
-    ev_stations = EVChargingStation.objects.filter(is_active=True, is_operational=True).order_by('name').values(
-        'id', 'name', 'latitude', 'longitude', 'charger_type', 'power_level', 'address'
-    )
-    
-    return JsonResponse({
-        'attractions': list(attractions),
-        'ev_stations': list(ev_stations)
-    })
+    try:
+        lat = float(request.GET.get('lat'))
+        lng = float(request.GET.get('lng'))
+        radius = float(request.GET.get('radius', 20))  # Default 20km radius
+        
+        attractions = []
+        ev_stations = []
+        
+        # Find attractions within radius
+        for attr in TouristAttraction.objects.filter(is_active=True):
+            distance = haversine_distance(lat, lng, attr.latitude, attr.longitude)
+            if distance <= radius:
+                attractions.append({
+                    'id': attr.id,
+                    'name': attr.name,
+                    'latitude': attr.latitude,
+                    'longitude': attr.longitude,
+                    'category': attr.category,
+                    'rating': float(attr.rating) if attr.rating else None,
+                    'distance': round(distance, 2)
+                })
+        
+        # Find EV stations within radius
+        for station in EVChargingStation.objects.filter(is_active=True, is_operational=True):
+            distance = haversine_distance(lat, lng, station.latitude, station.longitude)
+            if distance <= radius:
+                ev_stations.append({
+                    'id': station.id,
+                    'name': station.name,
+                    'latitude': station.latitude,
+                    'longitude': station.longitude,
+                    'charger_type': station.charger_type,
+                    'distance': round(distance, 2)
+                })
+        
+        # Sort by distance
+        attractions.sort(key=lambda x: x['distance'])
+        ev_stations.sort(key=lambda x: x['distance'])
+        
+        return JsonResponse({
+            'attractions': attractions,
+            'ev_stations': ev_stations
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
 
 
 def search_location_by_name(request):
-    """Search for destinations"""
+    """Search for places by name"""
     query = request.GET.get('q', '').strip()
     
     if not query or len(query) < 2:
@@ -45,6 +79,7 @@ def search_location_by_name(request):
     
     results = []
     
+    # Search attractions
     attractions = TouristAttraction.objects.filter(
         Q(name__icontains=query) | Q(address__icontains=query),
         is_active=True
@@ -61,6 +96,7 @@ def search_location_by_name(request):
             'address': attr.address or ''
         })
     
+    # Search EV stations
     stations = EVChargingStation.objects.filter(
         Q(name__icontains=query) | Q(address__icontains=query),
         is_active=True
@@ -77,11 +113,14 @@ def search_location_by_name(request):
             'address': station.address or ''
         })
     
+    # City centers
     city_coords = {
         'kathmandu': {'latitude': 27.7172, 'longitude': 85.3240, 'name': 'Kathmandu'},
         'pokhara': {'latitude': 28.2096, 'longitude': 83.9856, 'name': 'Pokhara'},
         'chitwan': {'latitude': 27.5291, 'longitude': 84.3542, 'name': 'Chitwan'},
         'lumbini': {'latitude': 27.4833, 'longitude': 83.2764, 'name': 'Lumbini'},
+        'bhaktapur': {'latitude': 27.6710, 'longitude': 85.4298, 'name': 'Bhaktapur'},
+        'patan': {'latitude': 27.6662, 'longitude': 85.3254, 'name': 'Patan'},
     }
     
     for city_key, city_data in city_coords.items():
@@ -150,7 +189,7 @@ def get_road_route_with_alternatives(start_lat, start_lng, end_lat, end_lng):
 
 @csrf_exempt
 def calculate_route_with_roads(request):
-    """Calculate route with options"""
+    """Calculate route with checkbox options"""
     if request.method != 'POST':
         return JsonResponse({'error': 'POST request required'}, status=400)
     
@@ -166,59 +205,60 @@ def calculate_route_with_roads(request):
         include_attractions = data.get('include_attractions', True)
         include_ev_stations = data.get('include_ev_stations', True)
         
+        # Get routes from OSRM
         all_routes = get_road_route_with_alternatives(start_lat, start_lng, end_lat, end_lng)
         
         attractions_list = []
         ev_stations_list = []
         
-        if include_attractions or include_ev_stations:
-            min_lat = min(start_lat, end_lat) - 1.0
-            max_lat = max(start_lat, end_lat) + 1.0
-            min_lng = min(start_lng, end_lng) - 1.0
-            max_lng = max(start_lng, end_lng) + 1.0
-            
-            if include_attractions:
-                attractions_list = list(TouristAttraction.objects.filter(
-                    is_active=True,
-                    latitude__gte=min_lat, latitude__lte=max_lat,
-                    longitude__gte=min_lng, longitude__lte=max_lng
-                ))
-            
-            if include_ev_stations:
-                ev_stations_list = list(EVChargingStation.objects.filter(
-                    is_active=True, is_operational=True,
-                    latitude__gte=min_lat, latitude__lte=max_lat,
-                    longitude__gte=min_lng, longitude__lte=max_lng
-                ))
+        # Get all attractions and EV stations in region
+        min_lat = min(start_lat, end_lat) - 1.0
+        max_lat = max(start_lat, end_lat) + 1.0
+        min_lng = min(start_lng, end_lng) - 1.0
+        max_lng = max(start_lng, end_lng) + 1.0
         
+        if include_attractions:
+            attractions_list = list(TouristAttraction.objects.filter(
+                is_active=True,
+                latitude__gte=min_lat, latitude__lte=max_lat,
+                longitude__gte=min_lng, longitude__lte=max_lng
+            ))
+        
+        if include_ev_stations:
+            ev_stations_list = list(EVChargingStation.objects.filter(
+                is_active=True, is_operational=True,
+                latitude__gte=min_lat, latitude__lte=max_lat,
+                longitude__gte=min_lng, longitude__lte=max_lng
+            ))
+        
+        # Process each route
         processed_routes = []
         for route_data in all_routes:
             attractions_on_route = []
             ev_on_route = []
             
-            if include_attractions:
-                for attr in attractions_list:
-                    if _is_near_path(attr.latitude, attr.longitude, route_data['coordinates'], 10):
-                        attractions_on_route.append({
-                            'id': attr.id,
-                            'name': attr.name,
-                            'latitude': attr.latitude,
-                            'longitude': attr.longitude,
-                            'type': 'attraction',
-                            'category': attr.category
-                        })
+            # Find stops near this route
+            for attr in attractions_list:
+                if _is_near_path(attr.latitude, attr.longitude, route_data['coordinates'], 10):
+                    attractions_on_route.append({
+                        'id': attr.id,
+                        'name': attr.name,
+                        'latitude': attr.latitude,
+                        'longitude': attr.longitude,
+                        'type': 'attraction',
+                        'category': attr.category
+                    })
             
-            if include_ev_stations:
-                for station in ev_stations_list:
-                    if _is_near_path(station.latitude, station.longitude, route_data['coordinates'], 10):
-                        ev_on_route.append({
-                            'id': station.id,
-                            'name': station.name,
-                            'latitude': station.latitude,
-                            'longitude': station.longitude,
-                            'type': 'ev_station',
-                            'charger_type': station.charger_type
-                        })
+            for station in ev_stations_list:
+                if _is_near_path(station.latitude, station.longitude, route_data['coordinates'], 10):
+                    ev_on_route.append({
+                        'id': station.id,
+                        'name': station.name,
+                        'latitude': station.latitude,
+                        'longitude': station.longitude,
+                        'type': 'ev_station',
+                        'charger_type': station.charger_type
+                    })
             
             route_stops = [{'name': start_name, 'latitude': start_lat, 'longitude': start_lng, 'type': 'start'}]
             route_stops.extend(sorted(attractions_on_route, key=lambda x: haversine_distance(start_lat, start_lng, x['latitude'], x['longitude'])))
