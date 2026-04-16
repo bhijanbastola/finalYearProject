@@ -1,12 +1,26 @@
 {% comment %} {% extends "base.html" %} {% endcomment %}
 {% load static %}
-{% block content %}
-<h2>Register</h2>
-<form method="post">
-  {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Register</button>
-</form>
-<p>Already have an account? <a href="{% url 'login' %}">Login here</a></p>
 
-{% endblock  %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/register.css' %}">
+<div class="register-container">
+  <div class="register-card">
+    <h2 class="register-title">Create Account</h2>
+    <p class="register-subtitle">Join us by creating your account below.</p>
+
+    <form method="post" class="register-form">
+      {% csrf_token %}
+      {{ form.as_p }}
+
+      <button type="submit" class="register-btn">
+        Register
+      </button>
+    </form>
+
+    <p class="login-text">
+      Already have an account?
+      <a href="{% url 'login' %}" class="login-link">Login here</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

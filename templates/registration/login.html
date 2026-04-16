@@ -1,20 +1,39 @@
-
 {% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
 </head>
 <body>
-    <h2>Login</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Log In</button>
-    </form>
-    <p>Don't have an account?<a href="{% url 'register' %}"> Register here</a></p>
-    {% comment %} Add a link to the password reset page.{% endcomment %}
-    <p><a href="{% url 'password_reset' %}">Forgot password?</a></p>  
+    <div class="login-container">
+        <div class="login-card">
+            <h2 class="login-title">Welcome Back</h2>
+            <p class="login-subtitle">Sign in to continue to your account.</p>
+
+            <form method="post" class="login-form">
+                {% csrf_token %}
+                {{ form.as_p }}
+
+                <button type="submit" class="login-btn">Log In</button>
+            </form>
+
+            <div class="login-links">
+                <p>
+                    Don’t have an account?
+                    <a href="{% url 'register' %}" class="register-link">Register here</a>
+                </p>
+
+                <p>
+                    <a href="{% url 'password_reset' %}" class="forgot-link">
+                        Forgot password?
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
