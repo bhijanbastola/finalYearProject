@@ -1,463 +1,309 @@
-from django.shortcuts import render
-from django.http import JsonResponse
+# maps/views.py
+# CORRECT VERSION - Dropdowns show attractions/EV of selected place, clickable map
+
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
+from django.db.models import Q
 from .models import TouristAttraction, EVChargingStation, Route, Waypoint
 import json
 import math
-import heapq
-from typing import List, Dict, Tuple
+import requests
 
 
 class MapView(TemplateView):
-    """
-    Main map view that displays the interactive map interface.
-    Shows all active tourist attractions and EV charging stations.
-    """
+    """Main map view"""
     template_name = 'maps.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['tourist_attractions'] = TouristAttraction.objects.filter(is_active=True)
-        context['ev_stations'] = EVChargingStation.objects.filter(is_active=True)
-        return context
 
 
-def get_all_locations(request):
+def get_attractions_and_stations_by_location(request):
     """
-    API endpoint to retrieve all active locations as JSON.
-    Returns tourist attractions and EV charging stations separately.
-    
-    Returns:
-        JsonResponse with 'tourist_attractions' and 'ev_stations' arrays
-    """
-    tourist_attractions = TouristAttraction.objects.filter(is_active=True).values(
-        'id', 'name', 'latitude', 'longitude', 'category', 'rating', 
-        'entry_fee', 'description', 'address'
-    )
-    
-    ev_stations = EVChargingStation.objects.filter(is_active=True).values(
-        'id', 'name', 'latitude', 'longitude', 'charger_type', 'power_level',
-        'number_of_ports', 'charging_speed', 'is_operational', 'description', 'address'
-    )
-    
-    data = {
-        'tourist_attractions': list(tourist_attractions),
-        'ev_stations': list(ev_stations),
-    }
-    
-    return JsonResponse(data)
-
-
-def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """
-    Calculate the great circle distance between two points on Earth.
-    Uses the Haversine formula for accurate geographic distance calculation.
-    
-    Args:
-        lat1: Latitude of first point (in decimal degrees)
-        lon1: Longitude of first point (in decimal degrees)
-        lat2: Latitude of second point (in decimal degrees)
-        lon2: Longitude of second point (in decimal degrees)
-    
-    Returns:
-        Distance in kilometers
-    
-    Formula:
-        a = sin²(Δlat/2) + cos(lat1) * cos(lat2) * sin²(Δlon/2)
-        c = 2 * arcsin(√a)
-        distance = Earth_radius * c
-    """
-    # Convert decimal degrees to radians
-    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
-    
-    # Haversine formula
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
-    c = 2 * math.asin(math.sqrt(a))
-    
-    # Radius of Earth in kilometers (mean radius)
-    r = 6371
-    
-    return c * r
-
-
-def build_graph(locations: List[Dict]) -> Dict[int, Dict[int, float]]:
-    """
-    Build a weighted graph from a list of locations.
-    Each location is connected to all other locations with edge weights
-    representing the distance between them.
-    
-    Args:
-        locations: List of dictionaries with 'latitude' and 'longitude' keys
-    
-    Returns:
-        Adjacency dictionary: {node_index: {neighbor_index: distance}}
-    
-    Example:
-        locations = [
-            {'latitude': 27.7, 'longitude': 85.3, 'name': 'A'},
-            {'latitude': 28.2, 'longitude': 83.9, 'name': 'B'}
-        ]
-        graph = build_graph(locations)
-        # graph = {0: {1: 123.45}, 1: {0: 123.45}}
-    """
-    graph = {}
-    
-    for i, loc1 in enumerate(locations):
-        graph[i] = {}
-        for j, loc2 in enumerate(locations):
-            if i != j:
-                distance = haversine_distance(
-                    loc1['latitude'], loc1['longitude'],
-                    loc2['latitude'], loc2['longitude']
-                )
-                graph[i][j] = distance
-    
-    return graph
-
-
-def dijkstra(graph: Dict[int, Dict[int, float]], start: int, end: int) -> Tuple[List[int], float]:
-    """
-    DIJKSTRA'S SHORTEST PATH ALGORITHM
-    
-    Finds the shortest path between two nodes in a weighted graph.
-    This is the core algorithm for route calculation.
-    
-    Algorithm Steps:
-    1. Initialize all distances to infinity except start node (0)
-    2. Use a priority queue to always process the nearest unvisited node
-    3. For each node, update distances to neighbors if a shorter path is found
-    4. Track the previous node for each to reconstruct the final path
-    5. Stop when the destination is reached
-    6. Backtrack from destination to start to get the complete path
-    
-    Args:
-        graph: Adjacency dictionary {node: {neighbor: distance}}
-        start: Starting node index
-        end: Ending node index
-    
-    Returns:
-        Tuple of (path as list of node indices, total distance in km)
-    
-    Time Complexity: O((V + E) log V) where V = vertices, E = edges
-    Space Complexity: O(V)
-    
-    Example:
-        graph = {0: {1: 10, 2: 5}, 1: {2: 2}, 2: {1: 3}}
-        path, distance = dijkstra(graph, 0, 1)
-        # path = [0, 2, 1], distance = 8
-    """
-    # Initialize distances: all nodes start at infinity except start node
-    distances = {node: float('infinity') for node in graph}
-    distances[start] = 0
-    
-    # Track previous node in optimal path for path reconstruction
-    previous = {node: None for node in graph}
-    
-    # Priority queue: stores (distance, node) tuples
-    # heapq ensures we always process the nearest unvisited node
-    pq = [(0, start)]
-    visited = set()
-    
-    while pq:
-        current_distance, current_node = heapq.heappop(pq)
-        
-        # Skip if already visited (can happen with duplicate entries)
-        if current_node in visited:
-            continue
-        
-        visited.add(current_node)
-        
-        # If we reached the destination, reconstruct and return the path
-        if current_node == end:
-            path = []
-            node = end
-            while node is not None:
-                path.append(node)
-                node = previous[node]
-            path.reverse()
-            return path, distances[end]
-        
-        # Check all neighbors of the current node
-        if current_node in graph:
-            for neighbor, weight in graph[current_node].items():
-                distance = current_distance + weight
-                
-                # If we found a shorter path to neighbor, update it
-                if distance < distances[neighbor]:
-                    distances[neighbor] = distance
-                    previous[neighbor] = current_node
-                    heapq.heappush(pq, (distance, neighbor))
-    
-    # No path found between start and end
-    return [], float('infinity')
-
-
-@csrf_exempt
-def calculate_shortest_path(request):
-    """
-    Main API endpoint for calculating the shortest path between two points.
-    Uses Dijkstra's algorithm to find the optimal route.
-    
-    Expects POST request with JSON body:
-    {
-        "start_lat": 28.3949,
-        "start_lng": 84.1240,
-        "end_lat": 27.7172,
-        "end_lng": 85.3240,
-        "include_waypoints": [1, 3, 5],  // Optional: IDs of locations to include
-        "save_route": false,              // Optional: whether to save this route
-        "route_name": "My Trip"           // Optional: name for saved route
-    }
-    
-    Returns JSON:
-    {
-        "success": true,
-        "path": [...],                    // Array of locations in order
-        "total_distance": 123.45,         // Total distance in km
-        "estimated_time": 147.4,          // Estimated time in minutes
-        "segments": [...],                // Distance breakdown by segment
-        "number_of_stops": 4,             // Total number of stops
-        "route_id": 123                   // ID of saved route (if save_route=true)
-    }
-    """
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST request required'}, status=400)
-    
-    try:
-        data = json.loads(request.body)
-        start_lat = float(data.get('start_lat'))
-        start_lng = float(data.get('start_lng'))
-        end_lat = float(data.get('end_lat'))
-        end_lng = float(data.get('end_lng'))
-        include_waypoints = data.get('include_waypoints', [])  # List of location IDs
-        
-        # Build list of all locations: start + waypoints + end
-        locations = [
-            {
-                'latitude': start_lat, 
-                'longitude': start_lng, 
-                'name': 'Start', 
-                'type': 'start'
-            }
-        ]
-        
-        # Add tourist attractions and EV stations as potential waypoints
-        if include_waypoints:
-            for loc_id in include_waypoints:
-                # Try to find in tourist attractions first
-                try:
-                    attraction = TouristAttraction.objects.get(id=loc_id, is_active=True)
-                    locations.append({
-                        'latitude': attraction.latitude,
-                        'longitude': attraction.longitude,
-                        'name': attraction.name,
-                        'type': 'attraction',
-                        'id': attraction.id
-                    })
-                except TouristAttraction.DoesNotExist:
-                    # If not found, try EV charging stations
-                    try:
-                        station = EVChargingStation.objects.get(id=loc_id, is_active=True)
-                        locations.append({
-                            'latitude': station.latitude,
-                            'longitude': station.longitude,
-                            'name': station.name,
-                            'type': 'ev_station',
-                            'id': station.id
-                        })
-                    except EVChargingStation.DoesNotExist:
-                        # Location not found, skip it
-                        pass
-        
-        # Add end point
-        locations.append({
-            'latitude': end_lat, 
-            'longitude': end_lng, 
-            'name': 'End', 
-            'type': 'end'
-        })
-        
-        # Build graph with all locations
-        graph = build_graph(locations)
-        
-        # Run Dijkstra's algorithm
-        start_idx = 0
-        end_idx = len(locations) - 1
-        path_indices, total_distance = dijkstra(graph, start_idx, end_idx)
-        
-        if not path_indices:
-            return JsonResponse({'error': 'No path found'}, status=404)
-        
-        # Build path with full location details
-        path = []
-        for idx in path_indices:
-            loc = locations[idx]
-            path.append({
-                'name': loc['name'],
-                'latitude': loc['latitude'],
-                'longitude': loc['longitude'],
-                'type': loc.get('type', 'waypoint'),
-                'id': loc.get('id')
-            })
-        
-        # Calculate distance for each segment of the path
-        segments = []
-        for i in range(len(path) - 1):
-            segment_distance = haversine_distance(
-                path[i]['latitude'], path[i]['longitude'],
-                path[i+1]['latitude'], path[i+1]['longitude']
-            )
-            segments.append({
-                'from': path[i]['name'],
-                'to': path[i+1]['name'],
-                'distance': round(segment_distance, 2)
-            })
-        
-        # Estimate travel time (assuming average speed of 50 km/h)
-        estimated_time = (total_distance / 50) * 60  # Convert to minutes
-        
-        response_data = {
-            'success': True,
-            'path': path,
-            'total_distance': round(total_distance, 2),
-            'estimated_time': round(estimated_time, 2),
-            'segments': segments,
-            'number_of_stops': len(path)
-        }
-        
-        # Optionally save the route to database
-        if data.get('save_route'):
-            route = Route.objects.create(
-                name=data.get('route_name', f"Route from {path[0]['name']} to {path[-1]['name']}"),
-                start_point=path[0]['name'],
-                end_point=path[-1]['name'],
-                start_lat=start_lat,
-                start_lng=start_lng,
-                end_lat=end_lat,
-                end_lng=end_lng,
-                total_distance=total_distance,
-                estimated_time=estimated_time,
-                path_coordinates=path
-            )
-            response_data['route_id'] = route.id
-        
-        return JsonResponse(response_data)
-        
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
-
-def get_nearby_locations(request):
-    """
-    Find tourist attractions and EV stations within a specified radius.
-    
-    Expects GET parameters:
-        lat: Latitude of center point
-        lng: Longitude of center point
-        radius: Search radius in kilometers (default: 10 km)
-    
-    Example:
-        /maps/api/nearby/?lat=28.3949&lng=84.1240&radius=5
-    
-    Returns JSON:
-    {
-        "attractions": [...],         // Nearby tourist attractions
-        "ev_stations": [...],         // Nearby EV charging stations
-        "search_center": {...},       // Center point coordinates
-        "radius": 10                  // Search radius used
-    }
+    Get attractions and EV stations near a specific location
+    GET /maps/api/locations-near/?lat=27.7&lng=85.3&radius=20
     """
     try:
         lat = float(request.GET.get('lat'))
         lng = float(request.GET.get('lng'))
-        radius = float(request.GET.get('radius', 10))  # Default 10 km
+        radius = float(request.GET.get('radius', 20))  # Default 20km radius
         
-        nearby_attractions = []
-        nearby_stations = []
+        attractions = []
+        ev_stations = []
         
-        # Find nearby tourist attractions
-        for attraction in TouristAttraction.objects.filter(is_active=True):
-            distance = haversine_distance(lat, lng, attraction.latitude, attraction.longitude)
+        # Find attractions within radius
+        for attr in TouristAttraction.objects.filter(is_active=True):
+            distance = haversine_distance(lat, lng, attr.latitude, attr.longitude)
             if distance <= radius:
-                nearby_attractions.append({
-                    'id': attraction.id,
-                    'name': attraction.name,
-                    'latitude': attraction.latitude,
-                    'longitude': attraction.longitude,
-                    'category': attraction.category,
-                    'rating': float(attraction.rating) if attraction.rating else None,
-                    'distance': round(distance, 2),
-                    'description': attraction.description
+                attractions.append({
+                    'id': attr.id,
+                    'name': attr.name,
+                    'latitude': attr.latitude,
+                    'longitude': attr.longitude,
+                    'category': attr.category,
+                    'rating': float(attr.rating) if attr.rating else None,
+                    'distance': round(distance, 2)
                 })
         
-        # Find nearby EV charging stations
-        for station in EVChargingStation.objects.filter(is_active=True):
+        # Find EV stations within radius
+        for station in EVChargingStation.objects.filter(is_active=True, is_operational=True):
             distance = haversine_distance(lat, lng, station.latitude, station.longitude)
             if distance <= radius:
-                nearby_stations.append({
+                ev_stations.append({
                     'id': station.id,
                     'name': station.name,
                     'latitude': station.latitude,
                     'longitude': station.longitude,
                     'charger_type': station.charger_type,
-                    'power_level': station.power_level,
-                    'is_operational': station.is_operational,
-                    'distance': round(distance, 2),
-                    'description': station.description
+                    'distance': round(distance, 2)
                 })
         
-        # Sort by distance (nearest first)
-        nearby_attractions.sort(key=lambda x: x['distance'])
-        nearby_stations.sort(key=lambda x: x['distance'])
+        # Sort by distance
+        attractions.sort(key=lambda x: x['distance'])
+        ev_stations.sort(key=lambda x: x['distance'])
         
         return JsonResponse({
-            'attractions': nearby_attractions,
-            'ev_stations': nearby_stations,
-            'search_center': {'lat': lat, 'lng': lng},
-            'radius': radius
+            'attractions': attractions,
+            'ev_stations': ev_stations
         })
         
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
 
-def get_route_details(request, route_id):
-    """
-    Retrieve details of a previously saved route.
+def search_location_by_name(request):
+    """Search for places by name"""
+    query = request.GET.get('q', '').strip()
     
-    Args:
-        route_id: ID of the route to retrieve
+    if not query or len(query) < 2:
+        return JsonResponse({'results': []})
     
-    Returns JSON with route details:
-    {
-        "id": 123,
-        "name": "My Trip",
-        "start_point": "Start",
-        "end_point": "End",
-        "total_distance": 123.45,
-        "estimated_time": 147.4,
-        "path": [...],
-        "created_at": "2024-01-15T10:30:00"
+    results = []
+    
+    # Search attractions
+    attractions = TouristAttraction.objects.filter(
+        Q(name__icontains=query) | Q(address__icontains=query),
+        is_active=True
+    )[:10]
+    
+    for attr in attractions:
+        results.append({
+            'id': attr.id,
+            'name': attr.name,
+            'latitude': attr.latitude,
+            'longitude': attr.longitude,
+            'type': 'attraction',
+            'category': attr.category,
+            'address': attr.address or ''
+        })
+    
+    # Search EV stations
+    stations = EVChargingStation.objects.filter(
+        Q(name__icontains=query) | Q(address__icontains=query),
+        is_active=True
+    )[:10]
+    
+    for station in stations:
+        results.append({
+            'id': station.id,
+            'name': station.name,
+            'latitude': station.latitude,
+            'longitude': station.longitude,
+            'type': 'ev_station',
+            'charger_type': station.charger_type,
+            'address': station.address or ''
+        })
+    
+    # City centers
+    city_coords = {
+        'kathmandu': {'latitude': 27.7172, 'longitude': 85.3240, 'name': 'Kathmandu'},
+        'pokhara': {'latitude': 28.2096, 'longitude': 83.9856, 'name': 'Pokhara'},
+        'chitwan': {'latitude': 27.5291, 'longitude': 84.3542, 'name': 'Chitwan'},
+        'lumbini': {'latitude': 27.4833, 'longitude': 83.2764, 'name': 'Lumbini'},
+        'bhaktapur': {'latitude': 27.6710, 'longitude': 85.4298, 'name': 'Bhaktapur'},
+        'patan': {'latitude': 27.6662, 'longitude': 85.3254, 'name': 'Patan'},
     }
-    """
-    route = get_object_or_404(Route, id=route_id)
     
-    data = {
-        'id': route.id,
-        'name': route.name,
-        'start_point': route.start_point,
-        'end_point': route.end_point,
-        'total_distance': route.total_distance,
-        'estimated_time': route.estimated_time,
-        'path': route.path_coordinates,
-        'created_at': route.created_at.isoformat()
-    }
+    for city_key, city_data in city_coords.items():
+        if query.lower() in city_key:
+            results.insert(0, {
+                'id': f'city_{city_key}',
+                'name': city_data['name'],
+                'latitude': city_data['latitude'],
+                'longitude': city_data['longitude'],
+                'type': 'city',
+                'address': f'{city_data["name"]} City Center'
+            })
     
-    return JsonResponse(data)
+    return JsonResponse({'results': results})
 
 
+def haversine_distance(lat1, lon1, lat2, lon2):
+    """Calculate distance in km"""
+    lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+    c = 2 * math.asin(math.sqrt(a))
+    return 6371 * c
+
+
+def get_road_route_with_alternatives(start_lat, start_lng, end_lat, end_lng):
+    """Get road routes from OSRM"""
+    try:
+        coords = f"{start_lng},{start_lat};{end_lng},{end_lat}"
+        url = f"http://router.project-osrm.org/route/v1/driving/{coords}"
+        params = {
+            'overview': 'full',
+            'geometries': 'geojson',
+            'alternatives': 'true',
+            'steps': 'true'
+        }
+        
+        response = requests.get(url, params=params, timeout=15)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get('code') == 'Ok' and data.get('routes'):
+                return [{
+                    'success': True,
+                    'coordinates': route['geometry']['coordinates'],
+                    'distance': route['distance'] / 1000,
+                    'duration': route['duration'] / 60,
+                } for route in data['routes']]
+        
+        return [{
+            'success': False,
+            'coordinates': [[start_lng, start_lat], [end_lng, end_lat]],
+            'distance': haversine_distance(start_lat, start_lng, end_lat, end_lng),
+            'duration': 0
+        }]
+    except Exception as e:
+        print(f"OSRM Error: {e}")
+        return [{
+            'success': False,
+            'coordinates': [[start_lng, start_lat], [end_lng, end_lat]],
+            'distance': haversine_distance(start_lat, start_lng, end_lat, end_lng),
+            'duration': 0
+        }]
+
+
+@csrf_exempt
+def calculate_route_with_roads(request):
+    """Calculate route with checkbox options"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST request required'}, status=400)
+    
+    try:
+        data = json.loads(request.body)
+        
+        start_lat = float(data.get('start_lat'))
+        start_lng = float(data.get('start_lng'))
+        start_name = data.get('start_name', 'Start')
+        end_lat = float(data.get('end_lat'))
+        end_lng = float(data.get('end_lng'))
+        end_name = data.get('end_name', 'End')
+        include_attractions = data.get('include_attractions', True)
+        include_ev_stations = data.get('include_ev_stations', True)
+        
+        # Get routes from OSRM
+        all_routes = get_road_route_with_alternatives(start_lat, start_lng, end_lat, end_lng)
+        
+        attractions_list = []
+        ev_stations_list = []
+        
+        # Get all attractions and EV stations in region
+        min_lat = min(start_lat, end_lat) - 1.0
+        max_lat = max(start_lat, end_lat) + 1.0
+        min_lng = min(start_lng, end_lng) - 1.0
+        max_lng = max(start_lng, end_lng) + 1.0
+        
+        if include_attractions:
+            attractions_list = list(TouristAttraction.objects.filter(
+                is_active=True,
+                latitude__gte=min_lat, latitude__lte=max_lat,
+                longitude__gte=min_lng, longitude__lte=max_lng
+            ))
+        
+        if include_ev_stations:
+            ev_stations_list = list(EVChargingStation.objects.filter(
+                is_active=True, is_operational=True,
+                latitude__gte=min_lat, latitude__lte=max_lat,
+                longitude__gte=min_lng, longitude__lte=max_lng
+            ))
+        
+        # Process each route
+        processed_routes = []
+        for route_data in all_routes:
+            attractions_on_route = []
+            ev_on_route = []
+            
+            # Find stops near this route
+            for attr in attractions_list:
+                if _is_near_path(attr.latitude, attr.longitude, route_data['coordinates'], 10):
+                    attractions_on_route.append({
+                        'id': attr.id,
+                        'name': attr.name,
+                        'latitude': attr.latitude,
+                        'longitude': attr.longitude,
+                        'type': 'attraction',
+                        'category': attr.category
+                    })
+            
+            for station in ev_stations_list:
+                if _is_near_path(station.latitude, station.longitude, route_data['coordinates'], 10):
+                    ev_on_route.append({
+                        'id': station.id,
+                        'name': station.name,
+                        'latitude': station.latitude,
+                        'longitude': station.longitude,
+                        'type': 'ev_station',
+                        'charger_type': station.charger_type
+                    })
+            
+            route_stops = [{'name': start_name, 'latitude': start_lat, 'longitude': start_lng, 'type': 'start'}]
+            route_stops.extend(sorted(attractions_on_route, key=lambda x: haversine_distance(start_lat, start_lng, x['latitude'], x['longitude'])))
+            route_stops.extend(sorted(ev_on_route, key=lambda x: haversine_distance(start_lat, start_lng, x['latitude'], x['longitude'])))
+            route_stops.append({'name': end_name, 'latitude': end_lat, 'longitude': end_lng, 'type': 'end'})
+            
+            processed_routes.append({
+                'coordinates': route_data['coordinates'],
+                'distance': round(route_data['distance'], 2),
+                'duration': round(route_data['duration'], 2) if route_data.get('duration') else round((route_data['distance'] / 50) * 60, 2),
+                'stops': route_stops,
+                'using_roads': route_data['success'],
+                'attractions_count': len(attractions_on_route),
+                'ev_stations_count': len(ev_on_route)
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'shortest_route': processed_routes[0] if processed_routes else None,
+            'alternative_routes': processed_routes[1:] if len(processed_routes) > 1 else [],
+            'total_routes': len(processed_routes)
+        })
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+def _is_near_path(lat, lng, path_coords, max_km=10):
+    """Check if point is near path"""
+    for coord in path_coords:
+        if haversine_distance(lat, lng, coord[1], coord[0]) <= max_km:
+            return True
+    return False
+
+
+def get_all_locations(request):
+    """Get all locations"""
+    return JsonResponse({
+        'tourist_attractions': list(TouristAttraction.objects.filter(is_active=True).values(
+            'id', 'name', 'latitude', 'longitude', 'category', 'rating', 'address'
+        )),
+        'ev_stations': list(EVChargingStation.objects.filter(is_active=True).values(
+            'id', 'name', 'latitude', 'longitude', 'charger_type', 'power_level', 'address'
+        ))
+    })
