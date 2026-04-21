@@ -1,0 +1,141 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  background: #0f172a;
+  color: #f8fafc;
+  overflow-x: hidden;
+}
+
+.container {
+  width: 90%;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.contact-hero {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(15,23,42,0.85), rgba(59,130,246,0.45)),
+              url('contact-bg.jpg') center/cover no-repeat;
+}
+
+.contact-content h1 {
+  font-size: 4rem;
+  margin-bottom: 15px;
+  letter-spacing: 2px;
+}
+
+.contact-content p {
+  color: #cbd5e1;
+  font-size: 1.15rem;
+}
+
+.contact-section {
+  padding: 90px 0;
+}
+
+.contact-section .container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50px;
+  align-items: start;
+}
+
+.contact-info,
+.contact-form-box {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 30px;
+  padding: 40px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+}
+
+.contact-info h2,
+.contact-form-box h2 {
+  font-size: 2rem;
+  margin-bottom: 20px;
+  color: #60a5fa;
+}
+
+.contact-info p {
+  color: #cbd5e1;
+  margin-bottom: 25px;
+  line-height: 1.8;
+}
+
+.info-box {
+  margin-bottom: 25px;
+  padding: 20px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.03);
+}
+
+.info-box h3 {
+  color: #93c5fd;
+  margin-bottom: 8px;
+}
+
+.info-box p {
+  margin: 0;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: 16px 18px;
+  border: none;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.07);
+  color: #f8fafc;
+  font-size: 1rem;
+  outline: none;
+  transition: 0.3s ease;
+}
+
+input:focus,
+textarea:focus {
+  background: rgba(255,255,255,0.12);
+  box-shadow: 0 0 0 2px rgba(96,165,250,0.5);
+}
+
+button {
+  padding: 16px;
+  border: none;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(96,165,250,0.35);
+}
+
+@media (max-width: 900px) {
+  .contact-section .container {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-content h1 {
+    font-size: 2.8rem;
+  }
+}

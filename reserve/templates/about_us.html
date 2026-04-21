@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+ <link rel="stylesheet" href="{% static 'css/about.css' %}">
+
+
+  <section class="hero">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <h1 style="margin-right:50px;">About Our Website</h1>
+      <p>Built with passion, creativity, and a vision to make life easier.</p>
+    </div>
+  </section>
+
+  <section class="about-section">
+    <div class="container">
+      <h2>Who We Are</h2>
+      <p>
+        Our website was developed to provide users with an elegant, simple, and useful platform
+        that solves real-world problems in a modern way. We wanted to create something that is
+        visually appealing, easy to use, and powerful enough to help people accomplish their goals.
+      </p>
+
+      <p>
+        Whether it is helping users organize information, explore new possibilities, or simply enjoy
+        a smooth and beautiful experience, this platform was designed with the user in mind.
+      </p>
+    </div>
+  </section>
+
+  <section class="mission-section">
+    <div class="container mission-grid">
+      <div class="mission-card">
+        <h3>Why It Was Developed</h3>
+        <p>
+          The website was created because we believed there should be a better, cleaner, and more
+          inspiring way to interact online.
+        </p>
+      </div>
+
+      <div class="mission-card">
+        <h3>What It Does</h3>
+        <p>
+          It provides users with tools, information, and experiences that are easy to access and
+          enjoyable to use.
+        </p>
+      </div>
+
+      <div class="mission-card">
+        <h3>Our Vision</h3>
+        <p>
+          To continue improving and creating features that make this platform even more valuable
+          and meaningful for everyone.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="founders-section">
+    <div class="container">
+      <h2>Meet The Founders</h2>
+      <p class="founder-subtitle">The people behind the vision and development of this application.</p>
+
+      <div class="founders-grid">
+
+        <div class="founder-card">
+          <img src="founder1.jpg" alt="Founder 1">
+          <h3>Founder Name</h3>
+          <span>Lead Developer</span>
+        </div>
+
+        <div class="founder-card">
+          <img src="founder2.jpg" alt="Founder 2">
+          <h3>Founder Name</h3>
+          <span>Developer</span>
+        </div>
+
+        <div class="founder-card">
+          <img src="founder3.jpg" alt="Founder 3">
+          <h3>Founder Name</h3>
+          <span>Developer</span>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+{% endblock %}
+
+
+

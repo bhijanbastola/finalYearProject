@@ -24,7 +24,8 @@ from django.shortcuts import redirect
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path('', lambda request: redirect('reserve/maps/')),  # Redirect root to reserve app
+    
+    path('', lambda request: redirect('reserve/maps/')), # Redirect root to reserve app
     path("reserve/", include("reserve.urls")),
     path("accounts/", include('django.contrib.auth.urls')),
     path('reserve/maps/', include('maps.urls')),  # Add this line for maps
