@@ -222,4 +222,6 @@ def contact_us(request):
     return render(request, 'contact_us.html')
 def maps(request):
     return render(request, 'route.html')
+def equipment(request):
+    return render(request, 'equipment.html')
 

@@ -1,0 +1,58 @@
+
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/equipment.css' %}">
+<section class="equipment-section">
+
+<h2>Equipments</h2>
+
+<div class="equipment-grid" id="grid">
+
+<!-- CARD -->
+<div class="equipment-card" data-id="1" data-name="Camera" data-price="25">
+  <div class="equipment-image">
+    <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32">
+  </div>
+  <div class="equipment-info">
+    <h3>Camera</h3>
+    <p class="price">$25 / day</p>
+  </div>
+  <div class="equipment-actions">
+    <button class="cart-btn">Add to Cart</button>
+  </div>
+</div>
+
+<div class="equipment-card" data-id="2" data-name="Tripod" data-price="10">
+  <div class="equipment-image">
+    <img src="https://images.unsplash.com/photo-1580894908361-967195033215">
+  </div>
+  <div class="equipment-info">
+    <h3>Tripod</h3>
+    <p class="price">$10 / day</p>
+  </div>
+  <div class="equipment-actions">
+    <button class="cart-btn">Add to Cart</button>
+  </div>
+</div>
+
+</div>
+
+</section>
+
+<div class="cart-panel">
+  <h3>🛒 Cart</h3>
+
+  <div id="cartList"></div>
+
+  <p>Total: $<span id="total">0</span> / day</p>
+
+  <!-- CTA BUTTON -->
+  <button class="package-btn">
+   <a href="#" class="package-btn">
+  Add to your package
+</a>
+  </button>
+</div>
+<script src="{% static 'js/equipment.js' %}"></script>
+{% endblock %}
