@@ -1,0 +1,157 @@
+/* ===== GLOBAL ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+/* ===== SECTION ===== */
+.equipment-section {
+  padding: 80px 5%;
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 50px;
+  font-size: 2.5rem;
+  color: #60a5fa;
+}
+
+/* ===== GRID ===== */
+.equipment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 25px;
+}
+
+/* ===== CARD ===== */
+.equipment-card {
+  background: rgba(255,255,255,0.05);
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: 0.4s;
+  display: flex;
+  flex-direction: column;
+}
+
+.equipment-card:hover {
+  transform: translateY(-10px);
+}
+
+/* IMAGE */
+.equipment-image {
+  height: 150px;
+  overflow: hidden;
+}
+
+.equipment-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: auto;
+  transition: 0.5s;
+}
+
+.equipment-card:hover img {
+  transform: scale(1.15);
+}
+
+/* INFO */
+.equipment-info {
+  padding: 10px 12px;
+}
+.equipment-info h3 {
+  font-size: 1rem;
+}
+
+.equipment-actions {
+  padding: 10px;
+}
+
+.price {
+  font-size:0.9rem;
+  color: #4ade80;
+  font-weight: bold;
+}
+
+/* BUTTON */
+.equipment-actions {
+  padding: 15px;
+  margin-top: auto;
+}
+
+.cart-btn {
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  background: #3b82f6;
+  color: white;
+  cursor: pointer;
+  font-size:0.9rem;
+}
+
+.cart-btn.added {
+  background: #ef4444;
+}
+
+/* ===== CART ===== */
+.cart-panel {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: 320px;            /* increased */
+  max-height: 80vh;        /* taller */
+  display: flex;
+  flex-direction: column;
+  background: rgba(15,23,42,0.95);
+  border-radius: 15px;
+  padding: 15px;
+}
+
+/* SCROLLABLE ITEMS */
+#cartList {
+  overflow-y: auto;
+  max-height: 250px;
+  margin-bottom: 10px;
+}
+
+/* CART ITEMS SMALL */
+.cart-item {
+  font-size: 0.8rem;
+  padding: 6px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+}
+
+.qty-controls button {
+  padding: 3px 8px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+.package-btn {
+  display: block;
+  text-align: center;
+  text-decoration: none; /* removes underline */
+  margin-top: 10px;
+  padding: 10px;
+  width: 100%;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: white;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+.package-btn:hover {
+  transform: scale(1.05);
+}

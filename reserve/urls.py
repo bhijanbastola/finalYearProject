@@ -21,5 +21,11 @@ urlpatterns = [
     path("gallery/", views.gallery, name="gallery"),
     path("packages/", views.packages, name="packages"),
     path("route/", views.route, name="route"),
+    path("about_us/", views.about_us, name="about_us"),
+    path("contact_us/", views.contact_us, name="contact_us"),
+    path("equipment/", views.equipment, name="equipment"),
+    path("packages/", views.packages, name="packages"),
+    path("payment/", views.payment, name="payment"),
+    path("maps/", views.maps, name="maps"),
     
 ] 
