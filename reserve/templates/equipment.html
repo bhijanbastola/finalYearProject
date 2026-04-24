@@ -3,56 +3,162 @@
 {% load static %}
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/equipment.css' %}">
+{% load static %}
+
 <section class="equipment-section">
 
-<h2>Equipments</h2>
+  <h2>Equipments</h2>
 
-<div class="equipment-grid" id="grid">
+  <div class="equipment-grid">
 
-<!-- CARD -->
-<div class="equipment-card" data-id="1" data-name="Camera" data-price="25">
-  <div class="equipment-image">
-    <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32">
-  </div>
-  <div class="equipment-info">
-    <h3>Camera</h3>
-    <p class="price">$25 / day</p>
-  </div>
-  <div class="equipment-actions">
-    <button class="cart-btn">Add to Cart</button>
-  </div>
-</div>
+    {% for equipment in equipments %}
+    <div class="equipment-card">
 
-<div class="equipment-card" data-id="2" data-name="Tripod" data-price="10">
-  <div class="equipment-image">
-    <img src="https://images.unsplash.com/photo-1580894908361-967195033215">
-  </div>
-  <div class="equipment-info">
-    <h3>Tripod</h3>
-    <p class="price">$10 / day</p>
-  </div>
-  <div class="equipment-actions">
-    <button class="cart-btn">Add to Cart</button>
-  </div>
-</div>
+      <!-- IMAGE -->
+      <div class="equipment-image">
+        <img src="{{ equipment.image.url }}" alt="{{ equipment.name }}">
+      </div>
 
-</div>
+      <!-- INFO -->
+      <div class="equipment-info">
+        <h3>{{ equipment.name }}</h3>
+        <p class="price">${{ equipment.price_per_day }} / day</p>
+      </div>
+
+      <!-- ACTION -->
+      <div class="equipment-actions">
+        <!-- FORM (DJANGO POST) -->
+        <form method="POST" action="{% url 'add_to_cart' equipment.id %}">
+          {% csrf_token %}
+          <button type="submit" class="cart-btn">
+            Add to Cart
+          </button>
+        </form>
+      </div>
+
+    </div>
+    {% endfor %}
+
+  </div>
 
 </section>
 
+<!-- CART PREVIEW -->
 <div class="cart-panel">
   <h3>🛒 Cart</h3>
 
-  <div id="cartList"></div>
+  {% for item in cart %}
+  <div class="cart-item">
+    <div>
+      {{ item.name }} <br>
+      ${{ item.price }} × {{ item.qty }}
+    </div>
 
-  <p>Total: $<span id="total">0</span> / day</p>
+    <div class="qty-controls">
+      <a href="{% url 'decrease_qty' item.id %}">-</a>
+      <span>{{ item.qty }}</span>
+      <a href="{% url 'increase_qty' item.id %}">+</a>
+    </div>
+  </div>
+  {% endfor %}
 
-  <!-- CTA BUTTON -->
-  <button class="package-btn">
-   <a href="#" class="package-btn">
-  Add to your package
-</a>
-  </button>
+  <p>Total: ${{ total_cost }} / day</p>
+
+  <a href="{% url 'packages' %}" class="package-btn">
+    Add to your package
+  </a>
 </div>
 <script src="{% static 'js/equipment.js' %}"></script>
 {% endblock %}
+
+
+<!--
+========================================
+ BACKEND REQUIREMENTS FOR EQUIPMENT PAGE
+========================================
+
+Context variables required:
+
+1. equipments (QuerySet / List)
+   Each equipment object must contain:
+   - id                (unique identifier)
+   - name              (string)
+   - image             (ImageField / URL)
+   - price_per_day     (decimal/float)
+
+   Example:
+   equipments = [
+     {
+       id: 1,
+       name: "Camera",
+       image: "equipment/camera.jpg",
+       price_per_day: 25
+     }
+   ]
+
+
+2. cart (List of selected items)
+   Each item must contain:
+   - id
+   - name
+   - price
+   - qty
+
+   Example:
+   cart = [
+     {
+       id: 1,
+       name: "Camera",
+       price: 25,
+       qty: 2
+     }
+   ]
+
+
+3. total_cost (Number)
+   - Total cost of all equipment (per day OR calculated as needed)
+
+
+========================================
+ REQUIRED URL ROUTES
+========================================
+
+These URLs must exist:
+
+1. add_to_cart (POST)
+   - URL name: 'add_to_cart'
+   - Argument: equipment.id
+   - Function: Adds item to cart
+
+2. increase_qty
+   - URL name: 'increase_qty'
+   - Argument: item.id
+   - Function: Increase quantity
+
+3. decrease_qty
+   - URL name: 'decrease_qty'
+   - Argument: item.id
+   - Function: Decrease quantity
+   - If qty == 0 → remove item
+
+3. package
+   - URL name: 'package'
+   - Redirect to package summary page
+
+
+========================================
+ NOTES
+========================================
+
+- Cart should be managed in:
+  → Django session OR database
+
+- total_cost should be calculated in backend
+
+- Image should be accessible via:
+  {{ equipment.image.url }}
+
+- All pricing logic should be handled backend-side
+
+========================================
+-->

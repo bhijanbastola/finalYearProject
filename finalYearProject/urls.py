@@ -22,10 +22,12 @@ from django.conf import settings
 from django.contrib.auth.urls import views as auth_views
 from django.shortcuts import redirect
 
+def root_redirect(request):
+    return redirect('index')
 urlpatterns = [
     path("admin/", admin.site.urls),
     
-    path('', lambda request: redirect('reserve/maps/')), # Redirect root to reserve app
+    path('', root_redirect),
     path("reserve/", include("reserve.urls")),
     path("accounts/", include('django.contrib.auth.urls')),
     path('reserve/maps/', include('maps.urls')),  # Add this line for maps

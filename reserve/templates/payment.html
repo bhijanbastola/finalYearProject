@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+{% load static %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/payment.css' %}">
+
+<div class="payment-container">
+
+  <h1>Complete Payment</h1>
+
+  <!-- SUMMARY -->
+  <div class="payment-summary">
+    <p><strong>Total:</strong> NPR {{ total_cost }}</p>
+    <p><strong>Days:</strong> {{ days }}</p>
+  </div>
+
+  <!-- SINGLE FORM -->
+  <form method="POST" action="{% url 'payment' %}">
+    {% csrf_token %}
+
+    <h3>Select Payment Method</h3>
+
+    <label>
+      <input type="radio" name="method" value="esewa" required> eSewa
+    </label><br>
+
+    <label>
+      <input type="radio" name="method" value="khalti"> Khalti
+    </label><br>
+
+    <label>
+      <input type="radio" name="method" value="phonepe"> PhonePe
+    </label>
+
+    <input type="hidden" name="amount" value="{{ total_cost }}">
+
+    <button type="submit" class="pay-btn">
+      Pay Now
+    </button>
+
+  </form>
+
+</div>
+{% endblock %}
+
+
+<!--
+========================================
+ BACKEND REQUIREMENTS - PAYMENT PAGE
+========================================
+
+Context variables:
+
+1. total_cost (Number)
+   - Final payable amount
+
+2. days (Number)
+   - Trip duration
+
+
+========================================
+ FORM SUBMISSION
+========================================
+
+POST → process_payment
+
+Fields:
+- payment_method  (esewa / khalti / phonepe)
+- amount          (total_cost)
+
+
+========================================
+ BACKEND RESPONSIBILITY
+========================================
+
+Based on payment_method:
+
+IF esewa:
+  → redirect to eSewa payment gateway
+
+IF khalti:
+  → initiate Khalti API
+
+IF phonepe:
+  → initiate PhonePe API
+
+
+========================================
+ IMPORTANT
+========================================
+
+- DO NOT trust frontend amount blindly
+  → verify in backend
+
+- Store order before payment
+
+- After payment:
+  → redirect to success page
+  → update order status
+
+
+========================================
+ OPTIONAL
+========================================
+- Handle failure/cancel cases
+
+========================================
+-->
