@@ -1,48 +1,356 @@
-{% extends "base.html" %}
-{% load static %}
+<!-- ================= BOOK NOW (included in index.html) ================= -->
+<style>
+    /* ── Button ─────────────────────────────────────────────────────── */
+    .booknow-wrap {
+        text-align: center;
+        padding: 60px 24px;
+    }
+    .booknow-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 44px;
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        color: #fff;
+        border: none;
+        border-radius: 100px;
+        font-family: 'DM Sans', 'Segoe UI', sans-serif;
+        font-size: 1.05em;
+        font-weight: 700;
+        cursor: pointer;
+        letter-spacing: 0.03em;
+        box-shadow: 0 8px 28px rgba(37,99,235,0.35);
+        transition: all 0.22s;
+    }
+    .booknow-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 36px rgba(37,99,235,0.5);
+    }
 
-{% block content %}
+    /* ── Overlay ─────────────────────────────────────────────────────── */
+    .bn-overlay {
+        display: none;
+        position: fixed; inset: 0; z-index: 9999;
+        background: rgba(15, 25, 35, 0.80);
+        backdrop-filter: blur(8px);
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+    }
+    .bn-overlay.open { display: flex; }
 
-<h1 class="page-title">Plan Your Trip</h1>
+    /* ── Card ────────────────────────────────────────────────────────── */
+    .bn-card {
+        background: #fff;
+        border-radius: 24px;
+        width: 100%;
+        max-width: 580px;
+        overflow: hidden;
+        box-shadow: 0 40px 100px rgba(0, 0, 0, 0.45);
+        animation: bnPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes bnPop {
+        from { transform: translateY(32px) scale(0.95); opacity: 0; }
+        to   { transform: translateY(0)    scale(1);    opacity: 1; }
+    }
 
-<button class="book-now-btn" onclick="openModal()">Book Now</button>
+    /* ── Header ──────────────────────────────────────────────────────── */
+    .bn-head {
+        background: linear-gradient(135deg, #0f1923 0%, #1e3a5f 100%);
+        padding: 32px 36px 26px;
+        position: relative;
+    }
+    .bn-head h2 {
+        font-family: 'Playfair Display', Georgia, serif;
+        font-size: 1.7em;
+        color: #fff;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .bn-head p {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 0.87em;
+        margin-top: 6px;
+        font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    }
+    .bn-x {
+        position: absolute; top: 20px; right: 20px;
+        width: 32px; height: 32px; border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        border: none; color: #fff; font-size: 1em;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        transition: background 0.2s;
+    }
+    .bn-x:hover { background: rgba(255, 255, 255, 0.22); }
 
-<!-- ================= BOOKING MODAL ================= -->
-<div class="booking-modal" id="bookingModal">
+    /* Step indicators */
+    .bn-steps {
+        display: flex; align-items: center; gap: 8px;
+        margin-top: 20px;
+    }
+    .bn-dot {
+        width: 28px; height: 28px; border-radius: 50%;
+        font-size: 0.73em; font-weight: 700;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+    .bn-dot.on  { background: #2563eb; color: #fff; }
+    .bn-dot.off { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.4); }
+    .bn-line    { flex: 1; height: 1px; background: rgba(255,255,255,0.12); }
+    .bn-step-labels {
+        display: flex; justify-content: space-between;
+        margin-top: 6px; padding: 0 2px;
+    }
+    .bn-step-labels span {
+        font-size: 0.68em; color: rgba(255,255,255,0.35);
+        font-family: 'DM Sans', 'Segoe UI', sans-serif;
+        flex: 1; text-align: center;
+    }
+    .bn-step-labels span:first-child { text-align: left; }
+    .bn-step-labels span:last-child  { text-align: right; }
 
-  <div class="booking-content">
+    /* ── Body ────────────────────────────────────────────────────────── */
+    .bn-body {
+        padding: 32px 36px 36px;
+    }
 
-    <span class="close-modal" onclick="closeModal()">&times;</span>
+    /* Each field row */
+    .bn-row2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+    }
 
-    <h2>Book Your Tour</h2>
+    /* Single field wrapper */
+    .bn-f {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        margin-bottom: 20px;
+    }
+    .bn-f:last-child { margin-bottom: 0; }
 
-    <form method="GET" action="{% url 'maps' %}">
+    /* Label */
+    .bn-f label {
+        font-size: 0.73em;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+        font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    }
 
-      <input type="text" name="fullname" placeholder="Full Name" required>
-      <input type="email" name="email" placeholder="Email Address" required>
-      <input type="text" name="pickup" placeholder="Pickup Location" required>
-      <input type="text" name="destination" placeholder="Destination Location" required>
-      <input type="number" name="people" placeholder="Number of People" min="1" required>
-      <input type="number" name="days" placeholder="Number of Tour Days" min="1" required>
+    /* Icon + input wrapper */
+    .bn-fi {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    .bn-fi .ico {
+        position: absolute;
+        left: 14px;
+        font-size: 1em;
+        line-height: 1;
+        pointer-events: none;
+        /* vertically centred by flexbox on parent */
+    }
 
-      <div class="modal-buttons">
-        <button type="submit" class="submit-btn">Continue</button>
-        <button type="button" class="cancel-btn" onclick="closeModal()">Cancel</button>
-      </div>
+    /* All inputs */
+    .bn-f input {
+        width: 100%;
+        height: 48px;                  /* fixed height = consistent rows */
+        padding: 0 16px 0 42px;        /* left room for icon */
+        border: 1.5px solid #e2e8f0;
+        border-radius: 10px;
+        font-family: 'DM Sans', 'Segoe UI', sans-serif;
+        font-size: 0.92em;
+        color: #1e293b;
+        background: #f8fafc;
+        transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    /* number inputs have no icon — reset padding */
+    .bn-f input[type="number"] {
+        width:auto;
+        padding: 0 16px;
+        
+    }
+    .bn-f input::placeholder { color: #c0ccda; }
+    .bn-f input:focus {
+        outline: none;
+        border-color: #2563eb;
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
 
-    </form>
+    /* Divider */
+    .bn-sep {
+        height: 1px;
+        background: #f1f5f9;
+        margin: 4px 0 22px;
+        position: relative;
+    }
+    .bn-sep span {
+        position: absolute; top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        background: #fff; padding: 0 12px;
+        font-size: 0.7em; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.08em;
+        color: #cbd5e1;
+        font-family: 'DM Sans', 'Segoe UI', sans-serif;
+    }
 
-  </div>
+    /* Buttons */
+    .bn-btns {
+        display: flex;
+        gap: 12px;
+        margin-top: 28px;
+    }
+    .bn-go {
+        flex: 1;
+        height: 50px;
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        color: #fff; border: none; border-radius: 12px;
+        font-family: 'DM Sans', 'Segoe UI', sans-serif;
+        font-size: 0.95em; font-weight: 700; cursor: pointer;
+        letter-spacing: 0.02em;
+        transition: all 0.2s;
+        box-shadow: 0 4px 16px rgba(37,99,235,0.3);
+    }
+    .bn-go:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(37,99,235,0.45);
+    }
+    .bn-no {
+        height: 50px;
+        padding: 0 24px;
+        background: transparent;
+        color: #94a3b8;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 12px;
+        font-family: 'DM Sans', 'Segoe UI', sans-serif;
+        font-size: 0.92em;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+    .bn-no:hover { border-color: #ef4444; color: #ef4444; }
+
+    /* ── Responsive ───────────────────────────────────────────────────── */
+    @media (max-width: 580px) {
+        .bn-row2  { grid-template-columns: 1fr; gap: 0; }
+        .bn-body  { padding: 24px 22px 28px; }
+        .bn-head  { padding: 26px 22px 22px; }
+        .bn-card  { border-radius: 18px; }
+    }
+</style>
+
+<!-- ── BUTTON ────────────────────────────────────────────────────────── -->
+<div class="booknow-wrap">
+    <button class="booknow-btn" onclick="openBnModal()">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+        Book Now
+    </button>
 </div>
 
-<!-- SIMPLE MODAL SCRIPT -->
-<script>
-function openModal() {
-  document.getElementById("bookingModal").style.display = "flex";
-}
-function closeModal() {
-  document.getElementById("bookingModal").style.display = "none";
-}
-</script>
+<!-- ── MODAL ─────────────────────────────────────────────────────────── -->
+<div class="bn-overlay" id="bnModal">
+    <div class="bn-card">
 
-{% endblock %}
+        <!-- Header -->
+        <div class="bn-head">
+            <h2>Book Your Tour</h2>
+            <p>Fill in your details — we'll take you straight to the map</p>
+            <button class="bn-x" onclick="closeBnModal()">✕</button>
+
+            <div class="bn-steps">
+                <div class="bn-dot on">1</div>
+                <div class="bn-line"></div>
+                <div class="bn-dot off">2</div>
+                <div class="bn-line"></div>
+                <div class="bn-dot off">3</div>
+            </div>
+            <div class="bn-step-labels">
+                <span>Details</span>
+                <span>Map</span>
+                <span>Route &amp; Hotels</span>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="bn-body">
+            <form method="GET" action="{% url 'create_trip' %}">
+
+                <!-- Row 1: Name + Email -->
+                <div class="bn-row2">
+                    <div class="bn-f">
+                        <label>Full Name</label>
+                        <div class="bn-fi">
+                            <span class="ico">👤</span>
+                            <input type="text" name="fullname" placeholder="John Doe" required>
+                        </div>
+                    </div>
+                    <div class="bn-f">
+                        <label>Email Address</label>
+                        <div class="bn-fi">
+                            <span class="ico">✉️</span>
+                            <input type="email" name="email" placeholder="you@email.com" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bn-sep"><span>Journey</span></div>
+
+                <!-- Pickup -->
+                <div class="bn-f">
+                    <label>Pickup Location</label>
+                    <div class="bn-fi">
+                        <span class="ico">📍</span>
+                        <input type="text" name="pickup" placeholder="e.g. Kathmandu" required>
+                    </div>
+                </div>
+
+                <!-- Destination -->
+                <div class="bn-f">
+                    <label>Destination</label>
+                    <div class="bn-fi">
+                        <span class="ico">🎯</span>
+                        <input type="text" name="destination" placeholder="e.g. Pokhara" required>
+                    </div>
+                </div>
+
+                <!-- Row 2: People + Days (no icons — cleaner for number inputs) -->
+                <div class="bn-row2">
+                    <div class="bn-f">
+                        <label>Number of People</label>
+                        <input type="number" name="people" placeholder="2" min="1" required>
+                    </div>
+                    <div class="bn-f">
+                        <label>Number of Days</label>
+                        <input type="number" name="days" placeholder="3" min="1" required>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="bn-btns">
+                    <button type="submit" class="bn-go">Continue to Map →</button>
+                    <button type="button" class="bn-no" onclick="closeBnModal()">Cancel</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openBnModal()  { document.getElementById('bnModal').classList.add('open'); }
+    function closeBnModal() { document.getElementById('bnModal').classList.remove('open'); }
+
+    document.getElementById('bnModal').addEventListener('click', function (e) {
+        if (e.target === this) closeBnModal();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeBnModal();
+    });
+</script>

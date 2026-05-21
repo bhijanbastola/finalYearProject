@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Your Route{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<div id="trip-data"
+    data-pickup         ="{{ trip.pickup|escapejs }}"
+    data-destination    ="{{ trip.destination|escapejs }}"
+    data-pickup-lat     ="{{ trip.pickup_lat|default:'' }}"
+    data-pickup-lng     ="{{ trip.pickup_lng|default:'' }}"
+    data-destination-lat="{{ trip.destination_lat|default:'' }}"
+    data-destination-lng="{{ trip.destination_lng|default:'' }}"
+    style="display:none;">
+</div>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: #f8fafc; color: #1e293b; }
+
+    /* ── Two-column layout: left = info, right = map ── */
+    .route-page {
+        display: grid;
+        grid-template-rows: 40vh 1fr;
+        height: calc(100vh - 70px);
+        
+    }
+
+   .route-panel {
+    grid-row: 2;
+    overflow-y: auto;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+}
+
+#map {
+    grid-row: 1;
+    width: 100%;
+    height: 100%;
+}
+
+    .panel-header {
+        background: linear-gradient(135deg, #0f1923, #1e3a5f);
+        padding: 22px 24px; flex-shrink: 0; color: #fff;
+    }
+    .panel-header h1 {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.5em; font-weight: 700; margin-bottom: 3px;
+    }
+    .panel-header p { opacity: 0.5; font-size: 0.8em; }
+
+    .panel-body { padding: 20px 22px; flex: 1; }
+
+    /* Trip summary cards */
+    .summary-grid {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;
+    }
+    .s-card {
+        background: #f8fafc; border-radius: 10px; padding: 13px;
+        border-top: 3px solid #2563eb;
+    }
+    .s-card.green { border-top-color: #10b981; }
+    .s-card .lbl {
+        font-size: 0.68em; font-weight: 800; text-transform: uppercase;
+        letter-spacing: 0.09em; color: #94a3b8; margin-bottom: 5px;
+    }
+    .s-card .val { font-size: 1em; font-weight: 700; color: #1e293b; }
+
+    .divider { height: 1px; background: #f1f5f9; margin: 16px 0; }
+
+    /* Route stats block — filled by JS from sessionStorage */
+    .route-stats-block { margin-bottom: 16px; }
+    .rsb-title {
+        font-size: 0.72em; font-weight: 800; text-transform: uppercase;
+        letter-spacing: 0.09em; color: #2563eb; margin-bottom: 11px;
+    }
+
+    .route-card {
+        background: #f8fafc; border-radius: 9px; padding: 14px;
+        border-left: 4px solid #2563eb; margin-bottom: 10px;
+    }
+    .route-card.alt { border-left-color: #ef4444; background: #fff5f5; }
+    .route-card h4 { font-size: 0.88em; font-weight: 700; color: #1e293b; margin-bottom: 9px; }
+
+    .rc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+    .rc-stat { font-size: 0.8em; color: #64748b; }
+    .rc-stat strong { color: #1e293b; display: block; font-size: 1.05em; }
+
+    .rc-meta { font-size: 0.75em; color: #94a3b8; margin-bottom: 8px; }
+
+    .stops-list { display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto; }
+    .stop-item {
+        display: flex; align-items: center; gap: 8px;
+        padding: 5px 9px; background: #fff; border-radius: 6px;
+        font-size: 0.79em; color: #475569; border: 1px solid #f1f5f9;
+    }
+    .stop-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+    .no-route-notice {
+        background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px;
+        padding: 12px 14px; font-size: 0.82em; color: #856404; margin-bottom: 16px;
+    }
+
+    /* Hotels section */
+    .hotels-section { margin-top: 4px; }
+    .section-head {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 12px;
+    }
+    .section-head h3 {
+        font-size: 0.72em; font-weight: 800; text-transform: uppercase;
+        letter-spacing: 0.09em; color: #2563eb;
+    }
+    .section-head a { font-size: 0.75em; color: #2563eb; text-decoration: none; font-weight: 600; }
+    .section-head a:hover { text-decoration: underline; }
+
+    .hotel-card {
+        background: #f8fafc; border-radius: 10px; padding: 14px;
+        margin-bottom: 10px; border: 1px solid #e2e8f0;
+        transition: box-shadow 0.2s;
+    }
+    .hotel-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    .hotel-name { font-size: 0.92em; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+    .hotel-loc  { font-size: 0.78em; color: #94a3b8; margin-bottom: 8px; }
+    .hotel-row  { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .hotel-price { font-size: 0.9em; font-weight: 700; color: #1e293b; }
+    .hotel-price span { font-size: 0.75em; font-weight: 400; color: #94a3b8; }
+    .badge { font-size: 0.7em; font-weight: 700; padding: 3px 8px; border-radius: 100px; }
+    .badge-green { background: #d1fae5; color: #065f46; }
+    .badge-red   { background: #fee2e2; color: #991b1b; }
+    .btn-book {
+        padding: 7px 14px; background: linear-gradient(135deg, #2563eb, #7c3aed);
+        color: #fff; border: none; border-radius: 7px;
+        font-family: 'DM Sans', sans-serif; font-size: 0.78em; font-weight: 700;
+        cursor: pointer; text-decoration: none; transition: all 0.2s;
+        display: inline-block;
+    }
+    .btn-book:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(37,99,235,0.35); color: #fff; }
+    .btn-book.disabled { opacity: 0.4; pointer-events: none; }
+
+    .no-hotels { text-align: center; padding: 24px; color: #94a3b8; font-size: 0.86em; }
+
+    /* Bottom nav */
+    .panel-footer {
+        padding: 16px 22px; border-top: 1px solid #f1f5f9;
+        display: flex; gap: 10px; flex-shrink: 0;
+    }
+    .back-btn {
+        flex: 1; padding: 10px; text-align: center;
+        background: #f8fafc; color: #475569; border: 1.5px solid #e2e8f0;
+        border-radius: 9px; font-family: 'DM Sans', sans-serif;
+        font-size: 0.86em; font-weight: 600; text-decoration: none;
+        transition: all 0.2s;
+    }
+    .back-btn:hover { border-color: #2563eb; color: #2563eb; }
+
+    
+</style>
+
+<div class="route-page">
+
+    <!-- ── LEFT PANEL ── -->
+    <div class="route-panel">
+        <div class="panel-header">
+            <h1>🗺️ Your Route</h1>
+            <p>{{ trip.pickup }} → {{ trip.destination }}</p>
+        </div>
+
+        <div class="panel-body">
+
+            <!-- Trip summary -->
+            <div class="summary-grid">
+                <div class="s-card" style="grid-column:span 2;">
+                    <div class="lbl">From → To</div>
+                    <div class="val">{{ trip.pickup }} → {{ trip.destination }}</div>
+                </div>
+                <div class="s-card green">
+                    <div class="lbl">People</div>
+                    <div class="val">{{ trip.people }}</div>
+                </div>
+                <div class="s-card green">
+                    <div class="lbl">Days</div>
+                    <div class="val">{{ trip.days }}</div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Route data from sessionStorage (filled by JS below) -->
+            <div class="route-stats-block" id="routeStatsBlock">
+                <div class="rsb-title">📊 Route Details</div>
+                <div class="no-route-notice" id="noRouteNotice">
+                    Route details not available. 
+                    <a href="{% url 'maps' %}?pickup={{ trip.pickup|urlencode }}&destination={{ trip.destination|urlencode }}&people={{ trip.people }}&days={{ trip.days }}" style="color:#856404;font-weight:700;">
+                        Recalculate on map →
+                    </a>
+                </div>
+                <div id="routeCardsContainer"></div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Hotels -->
+            <div class="hotels-section">
+                <div class="section-head">
+                    <h3>🏨 Available Hotels</h3>
+                    <a href="{% url 'hotels' %}">View all →</a>
+                </div>
+
+                {% if hotels %}
+                    {% for hotel in hotels %}
+                    <div class="hotel-card">
+                        <div class="hotel-name">{{ hotel.name }}</div>
+                        {% if hotel.location %}<div class="hotel-loc">📍 {{ hotel.location }}</div>{% endif %}
+                        <div class="hotel-row">
+                            <div>
+                                <div class="hotel-price">
+                                    {% if hotel.price_per_night %}${{ hotel.price_per_night }} <span>/ night</span>
+                                    {% else %}<span>Price on request</span>{% endif %}
+                                </div>
+                                {% if hotel.available_rooms %}
+                                    {% if hotel.available_rooms > 5 %}
+                                        <span class="badge badge-green">{{ hotel.available_rooms }} rooms left</span>
+                                    {% elif hotel.available_rooms > 0 %}
+                                        <span class="badge badge-red">Only {{ hotel.available_rooms }} left!</span>
+                                    {% else %}
+                                        <span class="badge badge-red">Fully booked</span>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                            {% if hotel.available_rooms > 0 %}
+                                <a href="{% url 'book_room' hotel.id %}" class="btn-book">Book Now</a>
+                            {% else %}
+                                <span class="btn-book disabled">Full</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="no-hotels">No hotels found near destination.<br>
+                        <a href="{% url 'hotels' %}" style="color:#2563eb;font-weight:600;">Browse all hotels →</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="panel-footer">
+            <a href="{% url 'maps' %}?pickup={{ trip.pickup|urlencode }}&destination={{ trip.destination|urlencode }}&people={{ trip.people }}&days={{ trip.days }}" class="back-btn">← Back to Map</a>
+            <a href="{% url 'hotels' %}" class="back-btn">🏨 All Hotels</a>
+        </div>
+    </div>
+
+    <!-- ── MAP ── -->
+    <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    var el             = document.getElementById('trip-data');
+    var pickup         = el.dataset.pickup;
+    var destination    = el.dataset.destination;
+    var pickupLat      = el.dataset.pickupLat      !== '' ? parseFloat(el.dataset.pickupLat)      : null;
+    var pickupLng      = el.dataset.pickupLng      !== '' ? parseFloat(el.dataset.pickupLng)      : null;
+    var destinationLat = el.dataset.destinationLat !== '' ? parseFloat(el.dataset.destinationLat) : null;
+    var destinationLng = el.dataset.destinationLng !== '' ? parseFloat(el.dataset.destinationLng) : null;
+
+    // ── Init map ──
+    var map = L.map('map').setView([28.3949, 84.1240], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+
+    var startIcon = L.divIcon({ className: '',
+        html: '<div style="background:#51cf66;width:26px;height:26px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>' });
+    var endIcon = L.divIcon({ className: '',
+        html: '<div style="background:#ff8787;width:26px;height:26px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>' });
+    var attrIcon = L.divIcon({ className: '',
+        html: '<div style="background:#ff6b6b;width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,0.25);"></div>' });
+    var evIcon = L.divIcon({ className: '',
+        html: '<div style="background:#4ecdc4;width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,0.25);"></div>' });
+
+    var bounds = [];
+
+    // ── Try to load saved route data from sessionStorage ──
+    var routeData     = null;
+    var startLocation = null;
+    var endLocation   = null;
+
+    try {
+        var raw = sessionStorage.getItem('routeData');
+        if (raw) {
+            routeData     = JSON.parse(raw);
+            startLocation = JSON.parse(sessionStorage.getItem('startLocation') || 'null');
+            endLocation   = JSON.parse(sessionStorage.getItem('endLocation')   || 'null');
+            // Clear after reading so stale data doesn't show on next visit
+            sessionStorage.removeItem('routeData');
+            sessionStorage.removeItem('startLocation');
+            sessionStorage.removeItem('endLocation');
+        }
+    } catch(e) {}
+
+    if (routeData && routeData.success) {
+        // ── Draw the real calculated route ──
+        document.getElementById('noRouteNotice').style.display = 'none';
+
+        var sl = startLocation || { latitude: pickupLat, longitude: pickupLng, name: pickup };
+        var el2 = endLocation  || { latitude: destinationLat, longitude: destinationLng, name: destination };
+
+        if (sl.latitude) {
+            L.marker([sl.latitude, sl.longitude], { icon: startIcon })
+                .addTo(map).bindPopup('<b>🟢 Start: ' + sl.name + '</b>').openPopup();
+            bounds.push([sl.latitude, sl.longitude]);
+        }
+        if (el2.latitude) {
+            L.marker([el2.latitude, el2.longitude], { icon: endIcon })
+                .addTo(map).bindPopup('<b>🔴 End: ' + el2.name + '</b>');
+            bounds.push([el2.latitude, el2.longitude]);
+        }
+
+        // Draw attraction / EV markers
+        routeData.shortest_route.stops.forEach(function (s) {
+            if (s.type === 'attraction') {
+                L.marker([s.latitude, s.longitude], { icon: attrIcon })
+                    .addTo(map).bindPopup('<b>🏛️ ' + s.name + '</b>');
+            } else if (s.type === 'ev_station') {
+                L.marker([s.latitude, s.longitude], { icon: evIcon })
+                    .addTo(map).bindPopup('<b>⚡ ' + s.name + '</b>');
+            }
+        });
+
+        // Draw shortest route polyline
+        var shortestCoords = routeData.shortest_route.coordinates.map(function (c) { return [c[1], c[0]]; });
+        var shortest = L.polyline(shortestCoords, { color: '#2563eb', weight: 6, opacity: 0.9 }).addTo(map);
+
+        // Draw alternative routes
+        routeData.alternative_routes.forEach(function (r) {
+            L.polyline(r.coordinates.map(function (c) { return [c[1], c[0]]; }),
+                { color: '#ef4444', weight: 4, opacity: 0.6, dashArray: '10,8' }).addTo(map);
+        });
+
+        map.fitBounds(shortest.getBounds(), { padding: [50, 50] });
+
+        // ── Render route stats in the panel ──
+        var r    = routeData.shortest_route;
+        var html = '<div class="route-card">' +
+            '<h4>🔵 Shortest Route</h4>' +
+            '<div class="rc-stats">' +
+            '<div class="rc-stat"><strong>' + r.distance + ' km</strong>Distance</div>' +
+            '<div class="rc-stat"><strong>' + r.duration + ' min</strong>Est. time</div>' +
+            '</div>' +
+            '<div class="rc-meta">' + r.attractions_count + ' attractions · ' + r.ev_stations_count + ' EV stations</div>' +
+            '<div class="stops-list">' +
+            r.stops.map(function (s) {
+                return s.type === 'attraction'
+                    ? '<div class="stop-item"><div class="stop-dot" style="background:#ff6b6b;"></div>🏛️ ' + s.name + '</div>'
+                    : s.type === 'ev_station'
+                    ? '<div class="stop-item"><div class="stop-dot" style="background:#4ecdc4;"></div>⚡ ' + s.name + '</div>'
+                    : '';
+            }).join('') +
+            '</div></div>';
+
+        if (routeData.alternative_routes.length) {
+            routeData.alternative_routes.forEach(function (rt, i) {
+                html += '<div class="route-card alt">' +
+                    '<h4>🔴 Alternative ' + (i+1) + '</h4>' +
+                    '<div class="rc-stats">' +
+                    '<div class="rc-stat"><strong>' + rt.distance + ' km</strong>Distance</div>' +
+                    '<div class="rc-stat"><strong>' + rt.duration + ' min</strong>Est. time</div>' +
+                    '</div>' +
+                    '<div class="rc-meta">' + rt.attractions_count + ' attractions · ' + rt.ev_stations_count + ' EV stations</div>' +
+                    '</div>';
+            });
+        }
+
+        document.getElementById('routeCardsContainer').innerHTML = html;
+
+    } else {
+        // ── No sessionStorage data — fall back to just placing markers ──
+        if (pickupLat !== null && pickupLng !== null) {
+            L.marker([pickupLat, pickupLng], { icon: startIcon })
+                .addTo(map).bindPopup('<b>🟢 Start: ' + pickup + '</b>').openPopup();
+            bounds.push([pickupLat, pickupLng]);
+        } else if (pickup) {
+            fetch('/reserve/maps/api/search-location/?q=' + encodeURIComponent(pickup))
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.results && data.results.length > 0) {
+                        var s = data.results[0];
+                        L.marker([s.latitude, s.longitude], { icon: startIcon }).addTo(map)
+                            .bindPopup('<b>🟢 ' + s.name + '</b>');
+                        map.setView([s.latitude, s.longitude], 8);
+                    }
+                });
+        }
+
+        if (destinationLat !== null && destinationLng !== null) {
+            L.marker([destinationLat, destinationLng], { icon: endIcon })
+                .addTo(map).bindPopup('<b>🔴 End: ' + destination + '</b>');
+            bounds.push([destinationLat, destinationLng]);
+        } else if (destination) {
+            fetch('/reserve/maps/api/search-location/?q=' + encodeURIComponent(destination))
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.results && data.results.length > 0) {
+                        var e = data.results[0];
+                        L.marker([e.latitude, e.longitude], { icon: endIcon }).addTo(map)
+                            .bindPopup('<b>🔴 ' + e.name + '</b>');
+                    }
+                });
+        }
+
+        if (bounds.length === 2) map.fitBounds(bounds, { padding: [60, 60] });
+        else if (bounds.length === 1) map.setView(bounds[0], 9);
+    }
+});
+</script>
+{% endblock %}
