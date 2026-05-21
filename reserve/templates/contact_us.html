@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/contact.css' %}">
+
+  <section class="contact-hero">
+    <div class="contact-content">
+      <h1>Get In Touch</h1>
+      <p>We would love to hear from you. Reach out to us anytime.</p>
+    </div>
+  </section>
+
+  <section class="contact-section">
+    <div class="container">
+      <div class="contact-info">
+        <h2>Contact Information</h2>
+        <p>
+          Whether you have a question, suggestion, feedback, or simply want to connect,
+          we are always happy to hear from you.
+        </p>
+
+        <div class="info-box">
+          <h3>Email</h3>
+          <p>support@example.com</p>
+        </div>
+
+        <div class="info-box">
+          <h3>Phone</h3>
+          <p>+123 456 7890</p>
+        </div>
+
+        <div class="info-box">
+          <h3>Address</h3>
+          <p>Your City, Your Country</p>
+        </div>
+      </div>
+
+      <div class="contact-form-box">
+        <h2>Send a Message</h2>
+
+        <form>
+          <input type="text" placeholder="Your Name" required>
+          <input type="email" placeholder="Your Email" required>
+          <input type="text" placeholder="Subject" required>
+          <textarea rows="6" placeholder="Your Message" required></textarea>
+          <button type="submit">Send Message</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+{% endblock %}
+
+
+
+

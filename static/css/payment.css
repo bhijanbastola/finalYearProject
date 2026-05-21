@@ -1,0 +1,74 @@
+body {
+  background: #0f172a;
+  color: #f8fafc;
+  font-family: 'Poppins', sans-serif;
+}
+
+.payment-container {
+  width: 90%;
+  max-width: 700px;
+  margin: 60px auto;
+}
+
+/* TITLE */
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #60a5fa;
+}
+
+/* SUMMARY */
+.payment-summary {
+  background: rgba(255,255,255,0.05);
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+/* OPTIONS GRID */
+.payment-options {
+  display: grid;
+  gap: 15px;
+}
+
+/* CARD */
+.payment-card {
+  display: block;
+  background: rgba(255,255,255,0.05);
+  padding: 15px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: 0.3s;
+}
+
+.payment-card:hover {
+  transform: scale(1.02);
+}
+
+/* HIDE RADIO */
+.payment-card input {
+  display: none;
+}
+
+/* SELECTED STATE */
+.payment-card input:checked + .card-content {
+  border: 1px solid #60a5fa;
+}
+
+/* BUTTON */
+.pay-btn {
+  margin-top: 20px;
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.pay-btn:hover {
+  transform: scale(1.05);
+}

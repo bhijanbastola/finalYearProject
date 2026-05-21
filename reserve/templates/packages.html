@@ -1,7 +1,96 @@
 {% extends 'base.html' %}
 {% load static %}
-
 {% block content %}
-<!-- ================= PACKAGES HERO ================= -->
+
+<link rel="stylesheet" href="{% static 'css/packages.css' %}">
+
+<div class="container">
+
+<h1>Your Trip Package</h1>
+
+<!-- =========================
+     🔥 RECOMMENDED PACKAGES
+========================= -->
+<div class="section">
+  <h3>🔥 Our Top Packages</h3>
+
+  <div class="recommend-grid">
+    {% for pkg in recommended_packages %}
+    <div class="recommend-card">
+      <h4>{{ pkg.name }}</h4>
+      <p>{{ pkg.description }}</p>
+      <span class="price">${{ pkg.price }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- =========================
+     🧾 USER PACKAGE
+========================= -->
+<div class="section">
+  <h3>🧾 Your Selected Package</h3>
+
+  <!-- HOMESTAYS -->
+  <h4>🏡 Homestays</h4>
+  {% for stay in homestays %}
+  <div class="item">
+    <span>{{ stay.name }}</span>
+    <span>${{ stay.price }} × {{ days }}</span>
+  </div>
+  {% endfor %}
+
+  <!-- EQUIPMENT -->
+  <h4>📸 Equipment</h4>
+  {% for item in cart %}
+  <div class="item">
+    <span>{{ item.name }}</span>
+    <span>${{ item.price }} × {{ item.qty }} × {{ days }}</span>
+  </div>
+  {% endfor %}
+
+  <!-- VEHICLE -->
+  <h4>🚗 Vehicle</h4>
+  <div class="item">
+    <span>Transport</span>
+    <span>${{ vehicle_cost }}</span>
+  </div>
+
+  <!-- DAYS -->
+  <h4>📅 Duration</h4>
+  <div class="item">
+    <span>Total Days</span>
+    <span>{{ days }}</span>
+  </div>
+
+</div>
+
+<!-- =========================
+     💰 TOTAL
+========================= -->
+<div class="total-box">
+  <h2>Total Cost: ${{ total_cost }}</h2>
+</div>
+
+<!-- =========================
+     💳 PAYMENT CTA
+========================= -->
+<a href="{% url 'payment' %}" class="pay-btn">
+  Finalize & Proceed to Payment
+</a>
+
+</div>
 
 {% endblock %}
+
+<!----
+this needs to be sent here from the view:
+{
+  "recommended_packages": top_3_packages,
+  "homestays": selected_homestays,
+  "cart": cart_items,
+  "vehicle_cost": vehicle_cost,
+  "days": days,
+  "total_cost": total
+}
+---->

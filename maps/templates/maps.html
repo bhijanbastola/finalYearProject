@@ -1,600 +1,621 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tourism Route Planner - Complete</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .header h1 { font-size: 2em; margin-bottom: 5px; }
-        .header p { opacity: 0.9; font-size: 1.05em; }
-        .container { display: grid; grid-template-columns: 450px 1fr; height: calc(100vh - 100px); gap: 0; }
-        .sidebar { background: white; padding: 25px; overflow-y: auto; border-right: 2px solid #e0e0e0; }
-        .section { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #e9ecef; }
-        .section:last-child { border-bottom: none; }
-        .section h3 { color: #667eea; margin-bottom: 15px; font-size: 1.1em; }
-        .form-group { margin-bottom: 15px; position: relative; }
-        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; color: #495057; font-size: 0.9em; }
-        .form-group input, .form-group select { width: 100%; padding: 10px 12px; border: 2px solid #dee2e6; border-radius: 6px; font-size: 0.95em; transition: all 0.3s; }
-        .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
-        .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 2px solid #667eea; border-top: none; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .autocomplete-dropdown.show { display: block; }
-        .autocomplete-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; transition: background 0.2s; }
-        .autocomplete-item:hover { background: #f8f9fa; }
-        .autocomplete-item strong { color: #667eea; }
-        .autocomplete-item small { color: #6c757d; font-size: 0.85em; display: block; }
-        .selected-location { padding: 10px; background: #e7f3ff; border-left: 4px solid #667eea; border-radius: 4px; margin-top: 10px; font-size: 0.9em; }
-        .checkbox-group { margin-bottom: 15px; }
-        .checkbox-group label { display: flex; align-items: center; padding: 8px; cursor: pointer; }
-        .checkbox-group input[type="checkbox"] { width: auto; margin-right: 10px; }
-        .btn { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 1em; font-weight: 600; cursor: pointer; transition: all 0.3s; margin-bottom: 10px; }
-        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
-        .btn-danger { background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%); color: white; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        #map { height: 100%; width: 100%; }
-        .legend { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 15px; }
-        .legend-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.9em; }
-        .legend-line { width: 30px; height: 4px; margin-right: 10px; border-radius: 2px; }
-        .legend-icon { width: 20px; height: 20px; border-radius: 50%; margin-right: 10px; }
-        .line-shortest { background: #4285f4; }
-        .line-alternative { background: #ea4335; }
-        .icon-start { background: #51cf66; }
-        .icon-end { background: #ff8787; }
-        .icon-attraction { background: #ff6b6b; }
-        .icon-ev { background: #4ecdc4; }
-        .loading { display: none; text-align: center; padding: 15px; color: #667eea; }
-        .loading.active { display: block; }
-        .spinner { border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .results { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 15px; display: none; }
-        .results.active { display: block; }
-        .route-card { background: white; padding: 12px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid #4285f4; }
-        .route-card.alternative { border-left-color: #ea4335; }
-        .route-card h5 { color: #495057; margin-bottom: 8px; font-size: 0.95em; }
-        .route-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; font-size: 0.85em; color: #6c757d; }
-        .stat strong { color: #495057; }
-        .stops-list { margin-top: 10px; max-height: 150px; overflow-y: auto; }
-        .stop-item { padding: 6px 10px; background: #f8f9fa; margin: 4px 0; border-radius: 4px; font-size: 0.85em; display: flex; align-items: center; gap: 8px; }
-        .stop-icon { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
-        .status-message { padding: 12px; border-radius: 6px; margin-bottom: 15px; display: none; }
-        .status-message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .status-message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .status-message.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
-        .hidden { display: none; }
-        @media (max-width: 968px) { .container { grid-template-columns: 1fr; height: auto; } #map { height: 60vh; } }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>🗺️ Tourism Route Planner</h1>
-        <p>Type place → See attractions dropdown → Click dropdown OR map → Check/Uncheck to show/hide markers</p>
-    </div>
 
-    <div class="container">
-        <div class="sidebar">
-            <div id="statusMessage" class="status-message"></div>
+{% block title %}Route Planner{% endblock %}
 
-            <div class="legend">
-                <h4 style="margin-bottom: 10px; color: #495057;">Map Legend</h4>
-                <div class="legend-item"><div class="legend-icon icon-start"></div><span>Start Point</span></div>
-                <div class="legend-item"><div class="legend-icon icon-end"></div><span>End Point</span></div>
-                <div class="legend-item"><div class="legend-icon icon-attraction"></div><span>Tourist Attractions</span></div>
-                <div class="legend-item"><div class="legend-icon icon-ev"></div><span>EV Charging Stations</span></div>
-                <div class="legend-item"><div class="legend-line line-shortest"></div><span>Shortest Route</span></div>
-                <div class="legend-item"><div class="legend-line line-alternative"></div><span>Alternative Routes</span></div>
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<div id="prefill-data"
+    data-pickup      ="{{ request.GET.pickup|default:''|escapejs }}"
+    data-destination ="{{ request.GET.destination|default:''|escapejs }}"
+    data-fullname    ="{{ request.GET.fullname|default:''|escapejs }}"
+    data-email       ="{{ request.GET.email|default:''|escapejs }}"
+    data-people      ="{{ request.GET.people|default:'' }}"
+    data-days        ="{{ request.GET.days|default:'' }}"
+    style="display:none;">
+</div>
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; }
+
+    /* ── Layout: sidebar takes more room, map is secondary ── */
+    .map-page {
+        display: grid;
+        grid-template-columns: 480px 1fr;   /* wider sidebar */
+        height: calc(100vh - 70px);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+        background: #fff;
+        overflow-y: auto;
+        border-right: 1px solid #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        z-index: 10;
+        box-shadow: 2px 0 12px rgba(0,0,0,0.06);
+    }
+
+    .sidebar-header {
+        background: linear-gradient(135deg, #0f1923, #1e3a5f);
+        color: #fff; padding: 20px 24px; flex-shrink: 0;
+    }
+    .sidebar-header h2 { font-size: 1.2em; font-weight: 700; margin-bottom: 3px; }
+    .sidebar-header p  { opacity: 0.5; font-size: 0.8em; }
+
+    .trip-banner {
+        background: #eff6ff; border-bottom: 2px solid #bfdbfe;
+        padding: 12px 18px; font-size: 0.82em; color: #1d4ed8;
+        display: none; gap: 10px; align-items: flex-start;
+    }
+    .trip-banner.show { display: flex; }
+    .trip-banner strong { display: block; color: #1e40af; margin-bottom: 2px; }
+
+    .sidebar-body { padding: 18px 20px; flex: 1; }
+
+    .section {
+        margin-bottom: 20px; padding-bottom: 20px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .section:last-child { border-bottom: none; margin-bottom: 0; }
+    .section-title {
+        font-size: 0.72em; font-weight: 800; text-transform: uppercase;
+        letter-spacing: 0.1em; color: #2563eb; margin-bottom: 12px;
+    }
+
+    /* ── Inputs ── */
+    .form-group { margin-bottom: 12px; position: relative; }
+    .form-group label {
+        display: block; font-size: 0.78em; font-weight: 600;
+        color: #64748b; margin-bottom: 5px;
+    }
+    .form-group input {
+        width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0;
+        border-radius: 9px; font-family: 'DM Sans', sans-serif; font-size: 0.9em;
+        color: #1e293b; background: #f8fafc;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus {
+        outline: none; border-color: #2563eb; background: #fff;
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Autocomplete */
+    .autocomplete-dropdown {
+        position: absolute; top: 100%; left: 0; right: 0; background: #fff;
+        border: 1.5px solid #2563eb; border-top: none; border-radius: 0 0 9px 9px;
+        max-height: 200px; overflow-y: auto; z-index: 9999; display: none;
+        box-shadow: 0 10px 28px rgba(0,0,0,0.14);
+    }
+    .autocomplete-dropdown.show { display: block; }
+    .autocomplete-item {
+        padding: 10px 14px; cursor: pointer;
+        border-bottom: 1px solid #f1f5f9; transition: background 0.15s;
+    }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover { background: #f0f7ff; }
+    .ac-name { font-size: 0.86em; font-weight: 600; color: #1e293b; }
+    .ac-addr { font-size: 0.75em; color: #94a3b8; margin-top: 2px; }
+
+    .selected-pill {
+        display: flex; align-items: center; gap: 8px; margin-top: 8px;
+        padding: 8px 12px; background: #f0f7ff; border-radius: 8px;
+        border-left: 3px solid #2563eb; font-size: 0.8em; color: #1d4ed8;
+    }
+    .selected-pill .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Toggles */
+    .toggle-row {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 7px 0; font-size: 0.86em; color: #475569;
+    }
+    .toggle { position: relative; width: 38px; height: 21px; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle-track {
+        position: absolute; inset: 0; background: #cbd5e1;
+        border-radius: 21px; cursor: pointer; transition: background 0.2s;
+    }
+    .toggle input:checked + .toggle-track { background: #2563eb; }
+    .toggle-track::after {
+        content: ''; position: absolute; top: 2px; left: 2px;
+        width: 17px; height: 17px; border-radius: 50%; background: #fff;
+        transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+    .toggle input:checked + .toggle-track::after { transform: translateX(17px); }
+
+    /* Buttons */
+    .btn {
+        width: 100%; padding: 12px; border: none; border-radius: 10px;
+        font-family: 'DM Sans', sans-serif; font-size: 0.92em; font-weight: 700;
+        cursor: pointer; transition: all 0.2s; margin-bottom: 8px;
+    }
+    .btn:last-child { margin-bottom: 0; }
+    .btn-primary { background: linear-gradient(135deg, #2563eb, #7c3aed); color: #fff; }
+    .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(37,99,235,0.38); }
+    .btn-green   { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+    .btn-green:hover:not(:disabled)   { transform: translateY(-1px); box-shadow: 0 5px 18px rgba(16,185,129,0.38); }
+    .btn-outline { background: transparent; color: #64748b; border: 1.5px solid #e2e8f0; }
+    .btn-outline:hover { border-color: #ef4444; color: #ef4444; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+    /* Legend */
+    .legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.8em; color: #475569; }
+    .legend-dot  { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+    .legend-line { width: 22px; height: 4px; border-radius: 2px; flex-shrink: 0; }
+
+    /* Alert */
+    .alert { padding: 10px 14px; border-radius: 8px; font-size: 0.82em; margin-bottom: 14px; display: none; }
+    .alert.show { display: block; }
+    .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .alert-error   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .alert-info    { background: #e0f2fe; color: #0c4a6e; border: 1px solid #bae6fd; }
+
+    /* Spinner */
+    .spinner-wrap { text-align: center; padding: 14px; display: none; color: #2563eb; font-size: 0.84em; }
+    .spinner-wrap.active { display: block; }
+    .spinner {
+        width: 30px; height: 30px; border: 3px solid #e2e8f0;
+        border-top-color: #2563eb; border-radius: 50%;
+        animation: spin 0.8s linear infinite; margin: 0 auto 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Results */
+    .results-box { background: #f8fafc; border-radius: 9px; padding: 14px; display: none; margin-top: 14px; }
+    .results-box.active { display: block; }
+    .route-card {
+        background: #fff; border-radius: 8px; padding: 13px;
+        border-left: 4px solid #2563eb; margin-bottom: 10px;
+        box-shadow: 0 1px 5px rgba(0,0,0,0.06);
+    }
+    .route-card.alt { border-left-color: #ef4444; }
+    .route-card h5 { font-size: 0.86em; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+    .route-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+    .stat-item { font-size: 0.79em; color: #64748b; }
+    .stat-item strong { color: #1e293b; }
+    .stops-list { margin-top: 8px; max-height: 130px; overflow-y: auto; }
+    .stop-item {
+        padding: 5px 9px; background: #f8fafc; margin: 3px 0;
+        border-radius: 6px; font-size: 0.79em; color: #475569;
+        display: flex; align-items: center; gap: 7px;
+    }
+    .stop-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Plan box */
+    .plan-box {
+        background: #f0fdf4; border: 1.5px solid #bbf7d0;
+        border-radius: 10px; padding: 16px; margin-top: 14px; display: none;
+    }
+    .plan-box.show { display: block; }
+    .plan-box-title { font-size: 0.84em; font-weight: 700; color: #065f46; margin-bottom: 12px; }
+
+    /* Map */
+    #map { width: 100%; height: 100%; }
+
+    @media (max-width: 960px) {
+        .map-page { grid-template-columns: 1fr; height: auto; }
+        #map { height: 55vh; }
+    }
+</style>
+
+<div class="map-page">
+
+    <!-- ── SIDEBAR ── -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2 style="margin-top:55px; ;">🗺️ Route Planner</h2>
+            <p>Confirm locations — then calculate &amp; save your trip</p>
+        </div>
+
+        <div class="trip-banner" id="tripBanner">
+            <span>📋</span>
+            <div>
+                <strong>Booking details carried over</strong>
+                Your pickup and destination are pre-filled. Confirm the pins, then click View Route &amp; Hotels.
+            </div>
+        </div>
+
+        <div class="sidebar-body">
+            <div id="alert" class="alert"></div>
+
+            <!-- Legend -->
+            <div class="section">
+                <div class="section-title">Legend</div>
+                <div class="legend-grid">
+                    <div class="legend-item"><div class="legend-dot" style="background:#51cf66;"></div>Start</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:#ff8787;"></div>End</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b;"></div>Attraction</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4;"></div>EV Station</div>
+                    <div class="legend-item"><div class="legend-line" style="background:#2563eb;"></div>Shortest</div>
+                    <div class="legend-item"><div class="legend-line" style="background:#ef4444;"></div>Alternative</div>
+                </div>
             </div>
 
+            <!-- Starting location -->
             <div class="section">
-                <h3>📍 Starting Location</h3>
+                <div class="section-title">📍 Starting Location</div>
                 <div class="form-group">
-                    <label>Type place name or click on map:</label>
-                    <input type="text" id="startSearch" placeholder="Search place (e.g., Kathmandu, Pokhara)" autocomplete="off">
+                    <label>Search or click the map</label>
+                    <input type="text" id="startSearch" placeholder="e.g. Kathmandu" autocomplete="off">
                     <div class="autocomplete-dropdown" id="startDropdown"></div>
                     <div id="startSelected"></div>
                 </div>
-                
-                 <div class="form-group hidden" id="startAttractionsGroup">
-                    {% comment %} <label>Or select specific attraction/EV station:</label>
-                    <select id="startAttractionSelect" onchange="selectFromStartDropdown()">
-                        <option value="">-- Select from list --</option>
-                    </select> {% endcomment %}
-                </div>
-            </div> 
+            </div>
 
+            <!-- Destination -->
             <div class="section">
-                <h3>🎯 Destination</h3>
+                <div class="section-title">🎯 Destination</div>
                 <div class="form-group">
-                    <label>Type place name or click on map:</label>
-                    <input type="text" id="endSearch" placeholder="Search place (e.g., Lumbini, Chitwan)" autocomplete="off">
+                    <label>Search or click the map</label>
+                    <input type="text" id="endSearch" placeholder="e.g. Pokhara" autocomplete="off">
                     <div class="autocomplete-dropdown" id="endDropdown"></div>
                     <div id="endSelected"></div>
                 </div>
-                
-                <div class="form-group hidden" id="endAttractionsGroup">
-                    <label>Or select specific attraction/EV station:</label>
-                    <select id="endAttractionSelect" onchange="selectFromEndDropdown()">
-                        <option value="">-- Select from list --</option>
-                    </select>
-                </div>
             </div>
 
+            <!-- Options -->
             <div class="section">
-                <h3>⚙️ Display Options</h3>
-                <div class="checkbox-group">
-                    <label>
-                        <input type="checkbox" id="showAttractions" checked onchange="toggleAttractionMarkers()">
-                        Show tourist attractions on map
-                    </label>
+                <div class="section-title">⚙️ Options</div>
+                <div class="toggle-row">
+                    <span>Tourist attractions</span>
+                    <label class="toggle"><input type="checkbox" id="showAttractions" checked onchange="toggleAttractionMarkers()"><div class="toggle-track"></div></label>
                 </div>
-                <div class="checkbox-group">
-                    <label>
-                        <input type="checkbox" id="showEVStations" checked onchange="toggleEVMarkers()">
-                        Show EV charging stations on map
-                    </label>
+                <div class="toggle-row">
+                    <span>EV charging stations</span>
+                    <label class="toggle"><input type="checkbox" id="showEVStations" checked onchange="toggleEVMarkers()"><div class="toggle-track"></div></label>
                 </div>
-                <button class="btn btn-primary" id="calculateBtn" onclick="calculateRoute()">
-                    🧭 Calculate Routes
-                </button>
-                <button class="btn btn-danger" onclick="clearAll()">🗑️ Clear All</button>
             </div>
 
-            <div class="loading" id="loadingIndicator">
-                <div class="spinner"></div>
-                <p>Calculating routes...</p>
+            <!-- Actions -->
+            <div class="section">
+                <button class="btn btn-primary" id="calculateBtn" onclick="calculateRoute()" disabled>🧭 Calculate Routes</button>
+                <button class="btn btn-outline" onclick="clearAll()">🗑️ Clear All</button>
             </div>
 
-            <div class="results" id="resultsSection"></div>
+            <div class="spinner-wrap" id="loadingIndicator"><div class="spinner"></div>Calculating routes…</div>
+
+            <!-- Route results shown here after calculate -->
+            <div class="results-box" id="resultsSection"></div>
+
+            <!-- Plan trip form — appears once both locations set -->
+            <div class="plan-box" id="planBox">
+                <div class="plan-box-title">🚀 Confirm &amp; View Route</div>
+                <form method="GET" action="{% url 'create_trip' %}" id="tripForm" onsubmit="return prepareAndSubmit()">
+                    <input type="hidden" name="pickup"          id="pickupInput">
+                    <input type="hidden" name="destination"     id="destinationInput">
+                    <input type="hidden" name="pickup_lat"      id="pickupLat">
+                    <input type="hidden" name="pickup_lng"      id="pickupLng">
+                    <input type="hidden" name="destination_lat" id="destinationLat">
+                    <input type="hidden" name="destination_lng" id="destinationLng">
+                    <input type="hidden" name="fullname"        id="fullnameInput">
+                    <input type="hidden" name="email"           id="emailInput">
+                    <div class="two-col">
+                        <div class="form-group">
+                            <label>People</label>
+                            <input type="number" name="people" id="peopleInput" placeholder="2" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Days</label>
+                            <input type="number" name="days" id="daysInput" placeholder="3" min="1" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-green" style="margin-top:8px;">View Route &amp; Hotels →</button>
+                </form>
+            </div>
         </div>
-
-        <div id="map"></div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- ── MAP ── -->
+    <div id="map"></div>
+</div>
 
-    <script>
-        let map, startLocation = null, endLocation = null;
-        let routePolylines = [], attractionMarkers = [], evMarkers = [];
-        let searchTimeout = null;
-        let clickMode = 'none'; // 'start', 'end', or 'none'
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    var map;
+    var startLocation = null, endLocation = null;
+    var routePolylines = [], attractionMarkers = [], evMarkers = [];
+    var searchTimeout = null, clickMode = 'none';
+    var lastRouteData = null; // store calculated route data for passing to route page
 
-        function initMap() {
-            map = L.map('map').setView([27.7172, 85.3240], 7);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap',
-                maxZoom: 19,
-            }).addTo(map);
+    var pf = document.getElementById('prefill-data').dataset;
+    var PRE_PICKUP      = pf.pickup      || '';
+    var PRE_DESTINATION = pf.destination || '';
+    var PRE_FULLNAME    = pf.fullname    || '';
+    var PRE_EMAIL       = pf.email       || '';
+    var PRE_PEOPLE      = pf.people      || '';
+    var PRE_DAYS        = pf.days        || '';
 
-            // Map click handler
-            map.on('click', function(e) {
-                if (clickMode === 'start') {
-                    setLocationFromMap(e.latlng, 'start');
-                } else if (clickMode === 'end') {
-                    setLocationFromMap(e.latlng, 'end');
-                }
-            });
+    function initMap() {
+        map = L.map('map').setView([27.7172, 85.3240], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap', maxZoom: 19
+        }).addTo(map);
 
-            showStatus('Click on map after selecting "Start" or "Destination" to set location', 'info');
+        map.on('click', function (e) {
+            if      (clickMode === 'start') setFromMap(e.latlng, 'start');
+            else if (clickMode === 'end')   setFromMap(e.latlng, 'end');
+        });
+
+        if (PRE_PICKUP || PRE_DESTINATION) {
+            document.getElementById('tripBanner').classList.add('show');
+            prefillFromBooking();
+        } else {
+            showAlert('Click the map or search to set your start point.', 'info');
         }
 
-        function setLocationFromMap(latlng, type) {
-            const location = {
-                name: `Selected on map`,
-                latitude: latlng.lat,
-                longitude: latlng.lng,
-                type: 'map_click'
-            };
+        if (PRE_PEOPLE) document.getElementById('peopleInput').value = PRE_PEOPLE;
+        if (PRE_DAYS)   document.getElementById('daysInput').value   = PRE_DAYS;
+        document.getElementById('fullnameInput').value = PRE_FULLNAME;
+        document.getElementById('emailInput').value    = PRE_EMAIL;
+    }
 
-            if (type === 'start') {
-                startLocation = location;
-                document.getElementById('startSearch').value = `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`;
-                document.getElementById('startSelected').innerHTML = 
-                    `<div class="selected-location"><strong>✓ Map Location</strong><br>
-                    <small>📍 ${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}</small></div>`;
-                document.getElementById('startAttractionsGroup').classList.add('hidden');
-                clickMode = 'end';
-                showStatus('Start set! Now click map or search for destination.', 'success');
+    function prefillFromBooking() {
+        var done = 0;
+        function tryFit() {
+            done++;
+            if (done === 2 && startLocation && endLocation) {
+                map.fitBounds([
+                    [startLocation.latitude, startLocation.longitude],
+                    [endLocation.latitude,   endLocation.longitude]
+                ], { padding: [40, 40] });
+                showAlert('Locations pre-filled! Calculate the route, then click View Route & Hotels.', 'success');
+            }
+        }
+
+        if (PRE_PICKUP) {
+            document.getElementById('startSearch').value = PRE_PICKUP;
+            fetch('/reserve/maps/api/search-location/?q=' + encodeURIComponent(PRE_PICKUP))
+                .then(function (r) { return r.json(); })
+                .then(function (d) { if (d.results && d.results.length) applyLocation(d.results[0], 'start'); tryFit(); })
+                .catch(tryFit);
+        } else { tryFit(); }
+
+        if (PRE_DESTINATION) {
+            document.getElementById('endSearch').value = PRE_DESTINATION;
+            fetch('/reserve/maps/api/search-location/?q=' + encodeURIComponent(PRE_DESTINATION))
+                .then(function (r) { return r.json(); })
+                .then(function (d) { if (d.results && d.results.length) applyLocation(d.results[0], 'end'); tryFit(); })
+                .catch(tryFit);
+        } else { tryFit(); }
+    }
+
+    function setFromMap(latlng, type) {
+        applyLocation({ name: 'Map point', latitude: latlng.lat, longitude: latlng.lng }, type);
+        showAlert(type === 'start' ? 'Start set! Now pick destination.' : 'Destination set!', 'success');
+        clickMode = type === 'start' ? 'end' : 'none';
+    }
+
+    function searchLocation(query, type) {
+        var dd = document.getElementById(type === 'start' ? 'startDropdown' : 'endDropdown');
+        if (query.length < 2) { dd.classList.remove('show'); return; }
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function () {
+            fetch('/reserve/maps/api/search-location/?q=' + encodeURIComponent(query))
+                .then(function (r) { return r.json(); })
+                .then(function (d) { renderDropdown(d.results || [], type); })
+                .catch(function () {});
+        }, 280);
+    }
+
+    function renderDropdown(results, type) {
+        var dd = document.getElementById(type === 'start' ? 'startDropdown' : 'endDropdown');
+        if (!results.length) { dd.classList.remove('show'); return; }
+        dd.innerHTML = results.map(function (r) {
+            var icon = r.type === 'city' ? '🏙️' : r.type === 'attraction' ? '🏛️' : '⚡';
+            return '<div class="autocomplete-item" onclick=\'pickResult(' + JSON.stringify(r) + ',"' + type + '")\'>' +
+                '<div class="ac-name">' + icon + ' ' + r.name + '</div>' +
+                '<div class="ac-addr">' + (r.address || '') + '</div></div>';
+        }).join('');
+        dd.classList.add('show');
+    }
+
+    function pickResult(loc, type) {
+        applyLocation(loc, type);
+        document.getElementById(type === 'start' ? 'startDropdown' : 'endDropdown').classList.remove('show');
+        clickMode = type === 'start' ? 'end' : 'none';
+    }
+
+    function applyLocation(loc, type) {
+        var isStart = type === 'start';
+        if (isStart) startLocation = loc; else endLocation = loc;
+        var color = isStart ? '#51cf66' : '#ff8787';
+        var label = isStart ? 'Start' : 'End';
+        document.getElementById(isStart ? 'startSearch' : 'endSearch').value = loc.name;
+        document.getElementById(isStart ? 'startSelected' : 'endSelected').innerHTML =
+            '<div class="selected-pill"><div class="dot" style="background:' + color + ';"></div>' +
+            '<span><strong>' + label + ':</strong> ' + loc.name +
+            ' <span style="color:#94a3b8;font-size:0.88em;">(' + loc.latitude.toFixed(4) + ', ' + loc.longitude.toFixed(4) + ')</span></span></div>';
+        checkReady();
+    }
+
+    function checkReady() {
+        var ready = !!(startLocation && endLocation);
+        document.getElementById('calculateBtn').disabled = !ready;
+        if (!ready) document.getElementById('planBox').classList.remove('show');
+    }
+
+    async function calculateRoute() {
+        if (!startLocation || !endLocation) { showAlert('Please set both locations first.', 'error'); return; }
+        routePolylines.forEach(function (p) { map.removeLayer(p); });
+        routePolylines = [];
+        document.getElementById('loadingIndicator').classList.add('active');
+        document.getElementById('resultsSection').classList.remove('active');
+
+        try {
+            var res = await fetch('/reserve/maps/api/calculate-route-with-roads/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify({
+                    start_lat: startLocation.latitude, start_lng: startLocation.longitude, start_name: startLocation.name,
+                    end_lat: endLocation.latitude,     end_lng: endLocation.longitude,     end_name: endLocation.name,
+                    include_attractions: document.getElementById('showAttractions').checked,
+                    include_ev_stations: document.getElementById('showEVStations').checked,
+                }),
+            });
+            var data = await res.json();
+            document.getElementById('loadingIndicator').classList.remove('active');
+
+            if (data.success) {
+                lastRouteData = data; // save for passing to route page
+                renderRoutes(data);
+                renderResults(data);
+                showAlert('Found ' + data.total_routes + ' route(s)! Now click View Route & Hotels.', 'success');
+                document.getElementById('planBox').classList.add('show');
             } else {
-                endLocation = location;
-                document.getElementById('endSearch').value = `${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`;
-                document.getElementById('endSelected').innerHTML = 
-                    `<div class="selected-location"><strong>✓ Map Location</strong><br>
-                    <small>📍 ${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}</small></div>`;
-                document.getElementById('endAttractionsGroup').classList.add('hidden');
-                clickMode = 'none';
-                showStatus('Destination set! Ready to calculate.', 'success');
+                showAlert(data.error || 'Could not calculate route.', 'error');
             }
-
-            if (startLocation && endLocation) {
-                document.getElementById('calculateBtn').disabled = false;
-            }
+        } catch (e) {
+            document.getElementById('loadingIndicator').classList.remove('active');
+            showAlert('Network error. Please try again.', 'error');
         }
+    }
 
-        function searchLocation(query, type) {
-            if (query.length < 2) {
-                const dropdown = type === 'start' ? 'startDropdown' : 'endDropdown';
-                document.getElementById(dropdown).classList.remove('show');
-                return;
-            }
+    function makeIcon(color, size) {
+        return L.divIcon({ className: '',
+            html: '<div style="background:' + color + ';width:' + size + 'px;height:' + size + 'px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>' });
+    }
 
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                fetch(`/reserve/maps/api/search-location/?q=${encodeURIComponent(query)}`)
-                    .then(r => r.json())
-                    .then(data => displayAutocomplete(data.results, type))
-                    .catch(e => console.error('Search error:', e));
-            }, 300);
-        }
+    function renderRoutes(data) {
+        attractionMarkers.forEach(function (m) { map.removeLayer(m); });
+        evMarkers.forEach(function (m) { map.removeLayer(m); });
+        attractionMarkers = []; evMarkers = [];
 
-        function displayAutocomplete(results, type) {
-            const dropdownId = type === 'start' ? 'startDropdown' : 'endDropdown';
-            const dropdown = document.getElementById(dropdownId);
-            
-            if (results.length === 0) {
-                dropdown.classList.remove('show');
-                return;
-            }
+        L.marker([startLocation.latitude, startLocation.longitude], { icon: makeIcon('#51cf66', 26) })
+            .addTo(map).bindPopup('<b>🟢 ' + startLocation.name + '</b>');
+        L.marker([endLocation.latitude, endLocation.longitude], { icon: makeIcon('#ff8787', 26) })
+            .addTo(map).bindPopup('<b>🔴 ' + endLocation.name + '</b>');
 
-            let html = '';
-            results.forEach(r => {
-                const icon = r.type === 'city' ? '🏙️' : (r.type === 'attraction' ? '🏛️' : '⚡');
-                html += `<div class="autocomplete-item" onclick='selectLocation(${JSON.stringify(r)}, "${type}")'>
-                    <strong>${icon} ${r.name}</strong>
-                    <small>${r.address || ''}</small>
-                </div>`;
-            });
+        var showA = document.getElementById('showAttractions').checked;
+        var showE = document.getElementById('showEVStations').checked;
 
-            dropdown.innerHTML = html;
-            dropdown.classList.add('show');
-        }
-
-        function selectLocation(location, type) {
-            if (type === 'start') {
-                startLocation = location;
-                document.getElementById('startSearch').value = location.name;
-                document.getElementById('startSelected').innerHTML = 
-                    `<div class="selected-location"><strong>✓ ${location.name}</strong><br>
-                    <small>📍 ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}</small></div>`;
-                document.getElementById('startDropdown').classList.remove('show');
-                
-                // Load attractions/EV stations near this location
-                loadNearbyLocations(location.latitude, location.longitude, 'start');
-                clickMode = 'end';
-            } else {
-                endLocation = location;
-                document.getElementById('endSearch').value = location.name;
-                document.getElementById('endSelected').innerHTML = 
-                    `<div class="selected-location"><strong>✓ ${location.name}</strong><br>
-                    <small>📍 ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}</small></div>`;
-                document.getElementById('endDropdown').classList.remove('show');
-                
-                // Load attractions/EV stations near this location
-                loadNearbyLocations(location.latitude, location.longitude, 'end');
-                clickMode = 'none';
-            }
-
-            if (startLocation && endLocation) {
-                document.getElementById('calculateBtn').disabled = false;
-            }
-        }
-
-        function loadNearbyLocations(lat, lng, type) {
-            fetch(`/reserve/maps/api/locations-near/?lat=${lat}&lng=${lng}&radius=20`)
-                .then(r => r.json())
-                .then(data => {
-                    const selectId = type === 'start' ? 'startAttractionSelect' : 'endAttractionSelect';
-                    const groupId = type === 'start' ? 'startAttractionsGroup' : 'endAttractionsGroup';
-                    const select = document.getElementById(selectId);
-                    
-                    select.innerHTML = '<option value="">-- Select from list --</option>';
-                    
-                    if (data.attractions.length > 0) {
-                        const optgroup = document.createElement('optgroup');
-                        optgroup.label = '🏛️ Tourist Attractions';
-                        data.attractions.forEach(attr => {
-                            const option = document.createElement('option');
-                            option.value = JSON.stringify({
-                                name: attr.name,
-                                latitude: attr.latitude,
-                                longitude: attr.longitude,
-                                type: 'attraction'
-                            });
-                            option.textContent = `${attr.name} (${attr.distance}km away)`;
-                            optgroup.appendChild(option);
-                        });
-                        select.appendChild(optgroup);
-                    }
-                    
-                    if (data.ev_stations.length > 0) {
-                        const optgroup = document.createElement('optgroup');
-                        optgroup.label = '⚡ EV Charging Stations';
-                        data.ev_stations.forEach(station => {
-                            const option = document.createElement('option');
-                            option.value = JSON.stringify({
-                                name: station.name,
-                                latitude: station.latitude,
-                                longitude: station.longitude,
-                                type: 'ev_station'
-                            });
-                            option.textContent = `${station.name} (${station.distance}km away)`;
-                            optgroup.appendChild(option);
-                        });
-                        select.appendChild(optgroup);
-                    }
-                    
-                    // Show the dropdown
-                    document.getElementById(groupId).classList.remove('hidden');
-                })
-                .catch(e => console.error('Error loading nearby locations:', e));
-        }
-
-        function selectFromStartDropdown() {
-            const select = document.getElementById('startAttractionSelect');
-            if (!select.value) return;
-            
-            const location = JSON.parse(select.value);
-            startLocation = location;
-            document.getElementById('startSearch').value = location.name;
-            document.getElementById('startSelected').innerHTML = 
-                `<div class="selected-location"><strong>✓ ${location.name}</strong><br>
-                <small>📍 ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}</small></div>`;
-            
-            if (startLocation && endLocation) {
-                document.getElementById('calculateBtn').disabled = false;
-            }
-        }
-
-        function selectFromEndDropdown() {
-            const select = document.getElementById('endAttractionSelect');
-            if (!select.value) return;
-            
-            const location = JSON.parse(select.value);
-            endLocation = location;
-            document.getElementById('endSearch').value = location.name;
-            document.getElementById('endSelected').innerHTML = 
-                `<div class="selected-location"><strong>✓ ${location.name}</strong><br>
-                <small>📍 ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}</small></div>`;
-            
-            if (startLocation && endLocation) {
-                document.getElementById('calculateBtn').disabled = false;
-            }
-        }
-
-        async function calculateRoute() {
-            if (!startLocation || !endLocation) {
-                showStatus('Please select both start and destination!', 'error');
-                return;
-            }
-
-            // Clear old routes
-            routePolylines.forEach(p => map.removeLayer(p));
-            routePolylines = [];
-
-            document.getElementById('loadingIndicator').classList.add('active');
-            document.getElementById('resultsSection').classList.remove('active');
-
-            const showAttractions = document.getElementById('showAttractions').checked;
-            const showEV = document.getElementById('showEVStations').checked;
-
-            try {
-                const response = await fetch('/reserve/maps/api/calculate-route-with-roads/', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-                    body: JSON.stringify({
-                        start_lat: startLocation.latitude,
-                        start_lng: startLocation.longitude,
-                        start_name: startLocation.name,
-                        end_lat: endLocation.latitude,
-                        end_lng: endLocation.longitude,
-                        end_name: endLocation.name,
-                        include_attractions: showAttractions,
-                        include_ev_stations: showEV
-                    })
-                });
-
-                const data = await response.json();
-                document.getElementById('loadingIndicator').classList.remove('active');
-
-                if (data.success) {
-                    displayRoutes(data);
-                    showStatus(`Found ${data.total_routes} routes!`, 'success');
-                } else {
-                    showStatus('Error: ' + (data.error || 'Could not calculate route'), 'error');
-                }
-            } catch (error) {
-                document.getElementById('loadingIndicator').classList.remove('active');
-                console.error('Error:', error);
-                showStatus('Error calculating route', 'error');
-            }
-        }
-
-        function displayRoutes(data) {
-            const startIcon = L.divIcon({className: '', html: '<div style="background:#51cf66;width:26px;height:26px;border-radius:50%;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>'});
-            const endIcon = L.divIcon({className: '', html: '<div style="background:#ff8787;width:26px;height:26px;border-radius:50%;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>'});
-            const attractionIcon = L.divIcon({className: '', html: '<div style="background:#ff6b6b;width:20px;height:20px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>'});
-            const evIcon = L.divIcon({className: '', html: '<div style="background:#4ecdc4;width:20px;height:20px;border-radius:50%;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);"></div>'});
-
-            // Clear old markers
-            attractionMarkers.forEach(m => map.removeLayer(m));
-            evMarkers.forEach(m => map.removeLayer(m));
-            attractionMarkers = [];
-            evMarkers = [];
-
-            // Add start/end markers
-            const startMarker = L.marker([startLocation.latitude, startLocation.longitude], {icon: startIcon})
-                .addTo(map).bindPopup(`<b>🟢 Start: ${startLocation.name}</b>`);
-            attractionMarkers.push(startMarker);
-
-            const endMarker = L.marker([endLocation.latitude, endLocation.longitude], {icon: endIcon})
-                .addTo(map).bindPopup(`<b>🔴 End: ${endLocation.name}</b>`);
-            attractionMarkers.push(endMarker);
-
-            // Add attraction/EV markers (controlled by checkboxes)
-            data.shortest_route.stops.forEach(stop => {
-                if (stop.type === 'attraction') {
-                    const m = L.marker([stop.latitude, stop.longitude], {icon: attractionIcon})
-                        .bindPopup(`<b>🏛️ ${stop.name}</b>`);
-                    if (document.getElementById('showAttractions').checked) {
-                        m.addTo(map);
-                    }
-                    attractionMarkers.push(m);
-                } else if (stop.type === 'ev_station') {
-                    const m = L.marker([stop.latitude, stop.longitude], {icon: evIcon})
-                        .bindPopup(`<b>⚡ ${stop.name}</b>`);
-                    if (document.getElementById('showEVStations').checked) {
-                        m.addTo(map);
-                    }
-                    evMarkers.push(m);
-                }
-            });
-
-            // Draw routes
-            const shortestCoords = data.shortest_route.coordinates.map(c => [c[1], c[0]]);
-            const shortestLine = L.polyline(shortestCoords, {color: '#4285f4', weight: 6, opacity: 0.8}).addTo(map);
-            routePolylines.push(shortestLine);
-
-            data.alternative_routes.forEach(route => {
-                const altCoords = route.coordinates.map(c => [c[1], c[0]]);
-                const altLine = L.polyline(altCoords, {color: '#ea4335', weight: 4, opacity: 0.6, dashArray: '10, 10'}).addTo(map);
-                routePolylines.push(altLine);
-            });
-
-            map.fitBounds(shortestLine.getBounds(), {padding: [50, 50]});
-            displayResults(data);
-        }
-
-        function toggleAttractionMarkers() {
-            const show = document.getElementById('showAttractions').checked;
-            attractionMarkers.forEach(m => {
-                if (show) {
-                    m.addTo(map);
-                } else {
-                    map.removeLayer(m);
-                }
-            });
-        }
-
-        function toggleEVMarkers() {
-            const show = document.getElementById('showEVStations').checked;
-            evMarkers.forEach(m => {
-                if (show) {
-                    m.addTo(map);
-                } else {
-                    map.removeLayer(m);
-                }
-            });
-        }
-
-        function displayResults(data) {
-            const resultsDiv = document.getElementById('resultsSection');
-            let html = '<h4>📊 Calculated Routes</h4>';
-
-            html += `<div class="route-card">
-                <h5>🔵 Shortest Route</h5>
-                <div class="route-stats">
-                    <div class="stat"><strong>${data.shortest_route.distance} km</strong> Distance</div>
-                    <div class="stat"><strong>${data.shortest_route.duration} min</strong> Time</div>
-                </div>
-                <div class="stat">
-                    <strong>${data.shortest_route.attractions_count}</strong> attractions, 
-                    <strong>${data.shortest_route.ev_stations_count}</strong> EV stations
-                </div>
-                <div class="stops-list">`;
-            
-            data.shortest_route.stops.forEach(stop => {
-                if (stop.type === 'attraction') {
-                    html += `<div class="stop-item"><div class="stop-icon" style="background:#ff6b6b;"></div><span>🏛️ ${stop.name}</span></div>`;
-                } else if (stop.type === 'ev_station') {
-                    html += `<div class="stop-item"><div class="stop-icon" style="background:#4ecdc4;"></div><span>⚡ ${stop.name}</span></div>`;
-                }
-            });
-            
-            html += `</div></div>`;
-
-            if (data.alternative_routes.length > 0) {
-                html += '<h4 style="margin-top:15px;">🔴 Alternative Routes</h4>';
-                data.alternative_routes.forEach((route, idx) => {
-                    html += `<div class="route-card alternative">
-                        <h5>Alternative ${idx + 1}</h5>
-                        <div class="route-stats">
-                            <div class="stat"><strong>${route.distance} km</strong></div>
-                            <div class="stat"><strong>${route.duration} min</strong></div>
-                        </div>
-                        <div class="stat">
-                            <strong>${route.attractions_count}</strong> attractions, 
-                            <strong>${route.ev_stations_count}</strong> EV stations
-                        </div>
-                    </div>`;
-                });
-            }
-
-            resultsDiv.innerHTML = html;
-            resultsDiv.classList.add('active');
-        }
-
-        function clearAll() {
-            startLocation = null;
-            endLocation = null;
-            clickMode = 'none';
-            document.getElementById('startSearch').value = '';
-            document.getElementById('endSearch').value = '';
-            document.getElementById('startSelected').innerHTML = '';
-            document.getElementById('endSelected').innerHTML = '';
-            document.getElementById('startAttractionsGroup').classList.add('hidden');
-            document.getElementById('endAttractionsGroup').classList.add('hidden');
-            document.getElementById('calculateBtn').disabled = true;
-            document.getElementById('resultsSection').classList.remove('active');
-            
-            routePolylines.forEach(p => map.removeLayer(p));
-            attractionMarkers.forEach(m => map.removeLayer(m));
-            evMarkers.forEach(m => map.removeLayer(m));
-            routePolylines = [];
-            attractionMarkers = [];
-            evMarkers = [];
-            
-            showStatus('Cleared. Select new locations.', 'info');
-        }
-
-        function showStatus(message, type) {
-            const statusDiv = document.getElementById('statusMessage');
-            statusDiv.textContent = message;
-            statusDiv.className = `status-message ${type}`;
-            statusDiv.style.display = 'block';
-            setTimeout(() => statusDiv.style.display = 'none', 5000);
-        }
-
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-
-        document.getElementById('startSearch').addEventListener('input', e => searchLocation(e.target.value, 'start'));
-        document.getElementById('endSearch').addEventListener('input', e => searchLocation(e.target.value, 'end'));
-        
-        document.getElementById('startSearch').addEventListener('focus', () => { clickMode = 'start'; });
-        document.getElementById('endSearch').addEventListener('focus', () => { clickMode = 'end'; });
-        
-        document.addEventListener('click', e => {
-            if (!e.target.closest('.form-group')) {
-                document.querySelectorAll('.autocomplete-dropdown').forEach(el => el.classList.remove('show'));
+        data.shortest_route.stops.forEach(function (s) {
+            if (s.type === 'attraction') {
+                var m = L.marker([s.latitude, s.longitude], { icon: makeIcon('#ff6b6b', 17) }).bindPopup('<b>🏛️ ' + s.name + '</b>');
+                if (showA) m.addTo(map); attractionMarkers.push(m);
+            } else if (s.type === 'ev_station') {
+                var m = L.marker([s.latitude, s.longitude], { icon: makeIcon('#4ecdc4', 17) }).bindPopup('<b>⚡ ' + s.name + '</b>');
+                if (showE) m.addTo(map); evMarkers.push(m);
             }
         });
 
-        document.addEventListener('DOMContentLoaded', initMap);
-    </script>
-</body>
-</html>
+        var shortest = L.polyline(data.shortest_route.coordinates.map(function (c) { return [c[1], c[0]]; }),
+            { color: '#2563eb', weight: 6, opacity: 0.85 }).addTo(map);
+        routePolylines.push(shortest);
+
+        data.alternative_routes.forEach(function (r) {
+            routePolylines.push(L.polyline(r.coordinates.map(function (c) { return [c[1], c[0]]; }),
+                { color: '#ef4444', weight: 4, opacity: 0.6, dashArray: '10,8' }).addTo(map));
+        });
+
+        map.fitBounds(shortest.getBounds(), { padding: [40, 40] });
+    }
+
+    function toggleAttractionMarkers() {
+        var show = document.getElementById('showAttractions').checked;
+        attractionMarkers.forEach(function (m) { show ? m.addTo(map) : map.removeLayer(m); });
+    }
+    function toggleEVMarkers() {
+        var show = document.getElementById('showEVStations').checked;
+        evMarkers.forEach(function (m) { show ? m.addTo(map) : map.removeLayer(m); });
+    }
+
+    function renderResults(data) {
+        var r = data.shortest_route;
+        var html = '<h4 style="font-size:0.88em;font-weight:700;color:#1e293b;margin-bottom:9px;">📊 Routes</h4>' +
+            '<div class="route-card"><h5>🔵 Shortest Route</h5>' +
+            '<div class="route-stats">' +
+            '<div class="stat-item"><strong>' + r.distance + ' km</strong> distance</div>' +
+            '<div class="stat-item"><strong>' + r.duration + ' min</strong> time</div></div>' +
+            '<div class="stat-item" style="font-size:0.76em;color:#64748b;margin-bottom:4px;">' +
+            r.attractions_count + ' attractions · ' + r.ev_stations_count + ' EV stations</div>' +
+            '<div class="stops-list">' +
+            r.stops.map(function (s) {
+                return s.type === 'attraction'
+                    ? '<div class="stop-item"><div class="stop-dot" style="background:#ff6b6b;"></div>🏛️ ' + s.name + '</div>'
+                    : s.type === 'ev_station'
+                    ? '<div class="stop-item"><div class="stop-dot" style="background:#4ecdc4;"></div>⚡ ' + s.name + '</div>'
+                    : '';
+            }).join('') + '</div></div>';
+
+        if (data.alternative_routes.length) {
+            html += '<h4 style="font-size:0.84em;font-weight:700;color:#1e293b;margin:10px 0 7px;">🔴 Alternatives</h4>';
+            data.alternative_routes.forEach(function (rt, i) {
+                html += '<div class="route-card alt"><h5>Alternative ' + (i+1) + '</h5>' +
+                    '<div class="route-stats">' +
+                    '<div class="stat-item"><strong>' + rt.distance + ' km</strong></div>' +
+                    '<div class="stat-item"><strong>' + rt.duration + ' min</strong></div>' +
+                    '</div></div>';
+            });
+        }
+
+        var box = document.getElementById('resultsSection');
+        box.innerHTML = html; box.classList.add('active');
+    }
+
+    function clearAll() {
+        startLocation = null; endLocation = null; clickMode = 'none'; lastRouteData = null;
+        ['startSearch','endSearch'].forEach(function (id) { document.getElementById(id).value = ''; });
+        ['startSelected','endSelected'].forEach(function (id) { document.getElementById(id).innerHTML = ''; });
+        document.getElementById('calculateBtn').disabled = true;
+        document.getElementById('planBox').classList.remove('show');
+        document.getElementById('tripBanner').classList.remove('show');
+        document.getElementById('resultsSection').classList.remove('active');
+        routePolylines.forEach(function (p) { map.removeLayer(p); });
+        attractionMarkers.forEach(function (m) { map.removeLayer(m); });
+        evMarkers.forEach(function (m) { map.removeLayer(m); });
+        routePolylines = []; attractionMarkers = []; evMarkers = [];
+        showAlert('Cleared. Pick new locations.', 'info');
+    }
+
+    function prepareAndSubmit() {
+        if (!startLocation || !endLocation) { showAlert('Pick both locations first!', 'error'); return false; }
+
+        document.getElementById('pickupInput').value      = startLocation.name;
+        document.getElementById('destinationInput').value = endLocation.name;
+        document.getElementById('pickupLat').value        = startLocation.latitude;
+        document.getElementById('pickupLng').value        = startLocation.longitude;
+        document.getElementById('destinationLat').value   = endLocation.latitude;
+        document.getElementById('destinationLng').value   = endLocation.longitude;
+
+        // Save the full route data to sessionStorage so route.html can use it
+        if (lastRouteData) {
+            try {
+                sessionStorage.setItem('routeData', JSON.stringify(lastRouteData));
+                sessionStorage.setItem('startLocation', JSON.stringify(startLocation));
+                sessionStorage.setItem('endLocation',   JSON.stringify(endLocation));
+            } catch(e) {}
+        }
+        return true;
+    }
+
+    function showAlert(msg, type) {
+        var el = document.getElementById('alert');
+        el.textContent = msg; el.className = 'alert alert-' + type + ' show';
+        clearTimeout(el._t); el._t = setTimeout(function () { el.classList.remove('show'); }, 6000);
+    }
+
+    function getCookie(name) {
+        for (var part of document.cookie.split(';')) {
+            var kv = part.trim().split('=');
+            if (kv[0] === name) return decodeURIComponent(kv[1] || '');
+        }
+        return '';
+    }
+
+    document.getElementById('startSearch').addEventListener('input',  function (e) { searchLocation(e.target.value, 'start'); });
+    document.getElementById('endSearch').addEventListener('input',    function (e) { searchLocation(e.target.value, 'end'); });
+    document.getElementById('startSearch').addEventListener('focus',  function () { clickMode = 'start'; });
+    document.getElementById('endSearch').addEventListener('focus',    function () { clickMode = 'end'; });
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.form-group'))
+            document.querySelectorAll('.autocomplete-dropdown').forEach(function (d) { d.classList.remove('show'); });
+    });
+
+    document.addEventListener('DOMContentLoaded', initMap);
+</script>
+{% endblock %}

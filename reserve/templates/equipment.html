@@ -1,0 +1,164 @@
+
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/equipment.css' %}">
+{% load static %}
+
+<section class="equipment-section">
+
+  <h2>Equipments</h2>
+
+  <div class="equipment-grid">
+
+    {% for equipment in equipments %}
+    <div class="equipment-card">
+
+      <!-- IMAGE -->
+      <div class="equipment-image">
+        <img src="{{ equipment.image.url }}" alt="{{ equipment.name }}">
+      </div>
+
+      <!-- INFO -->
+      <div class="equipment-info">
+        <h3>{{ equipment.name }}</h3>
+        <p class="price">${{ equipment.price_per_day }} / day</p>
+      </div>
+
+      <!-- ACTION -->
+      <div class="equipment-actions">
+        <!-- FORM (DJANGO POST) -->
+        <form method="POST" action="{% url 'add_to_cart' equipment.id %}">
+          {% csrf_token %}
+          <button type="submit" class="cart-btn">
+            Add to Cart
+          </button>
+        </form>
+      </div>
+
+    </div>
+    {% endfor %}
+
+  </div>
+
+</section>
+
+<!-- CART PREVIEW -->
+<div class="cart-panel">
+  <h3>🛒 Cart</h3>
+
+  {% for item in cart %}
+  <div class="cart-item">
+    <div>
+      {{ item.name }} <br>
+      ${{ item.price }} × {{ item.qty }}
+    </div>
+
+    <div class="qty-controls">
+      <a href="{% url 'decrease_qty' item.id %}">-</a>
+      <span>{{ item.qty }}</span>
+      <a href="{% url 'increase_qty' item.id %}">+</a>
+    </div>
+  </div>
+  {% endfor %}
+
+  <p>Total: ${{ total_cost }} / day</p>
+
+  <a href="{% url 'packages' %}" class="package-btn">
+    Add to your package
+  </a>
+</div>
+<script src="{% static 'js/equipment.js' %}"></script>
+{% endblock %}
+
+
+<!--
+========================================
+ BACKEND REQUIREMENTS FOR EQUIPMENT PAGE
+========================================
+
+Context variables required:
+
+1. equipments (QuerySet / List)
+   Each equipment object must contain:
+   - id                (unique identifier)
+   - name              (string)
+   - image             (ImageField / URL)
+   - price_per_day     (decimal/float)
+
+   Example:
+   equipments = [
+     {
+       id: 1,
+       name: "Camera",
+       image: "equipment/camera.jpg",
+       price_per_day: 25
+     }
+   ]
+
+
+2. cart (List of selected items)
+   Each item must contain:
+   - id
+   - name
+   - price
+   - qty
+
+   Example:
+   cart = [
+     {
+       id: 1,
+       name: "Camera",
+       price: 25,
+       qty: 2
+     }
+   ]
+
+
+3. total_cost (Number)
+   - Total cost of all equipment (per day OR calculated as needed)
+
+
+========================================
+ REQUIRED URL ROUTES
+========================================
+
+These URLs must exist:
+
+1. add_to_cart (POST)
+   - URL name: 'add_to_cart'
+   - Argument: equipment.id
+   - Function: Adds item to cart
+
+2. increase_qty
+   - URL name: 'increase_qty'
+   - Argument: item.id
+   - Function: Increase quantity
+
+3. decrease_qty
+   - URL name: 'decrease_qty'
+   - Argument: item.id
+   - Function: Decrease quantity
+   - If qty == 0 → remove item
+
+3. package
+   - URL name: 'package'
+   - Redirect to package summary page
+
+
+========================================
+ NOTES
+========================================
+
+- Cart should be managed in:
+  → Django session OR database
+
+- total_cost should be calculated in backend
+
+- Image should be accessible via:
+  {{ equipment.image.url }}
+
+- All pricing logic should be handled backend-side
+
+========================================
+-->
