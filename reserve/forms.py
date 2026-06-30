@@ -81,4 +81,3 @@ class HotelRegistrationForm(forms.ModelForm):
 
 
 
-

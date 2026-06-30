@@ -359,3 +359,4 @@ def route(request, trip_id):
     if not hotels.exists():
         hotels = Hotel.objects.filter(available_rooms__gt=0)[:6]
     return render(request, "route.html", {"trip": trip, "hotels": hotels})
+
