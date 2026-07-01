@@ -1,15 +1,19 @@
 # maps/views.py
 # CORRECT VERSION - Dropdowns show attractions/EV of selected place, clickable map
 
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 from django.db.models import Q
+
+from .decorators import owner_required
 from .models import TouristAttraction, EVChargingStation, Route, Waypoint
 import json
 import math
 import requests
+from django.contrib import messages
+from .forms import TouristAttractionForm, EVChargingStationForm
 
 
 class MapView(TemplateView):
@@ -307,3 +311,70 @@ def get_all_locations(request):
             'id', 'name', 'latitude', 'longitude', 'charger_type', 'power_level', 'address'
         ))
     })
+
+def add_attraction(request):
+    """
+    View to add a new tourist attraction
+    GET: Show empty form
+    POST: Process form submission with image upload
+    """
+    if request.method == 'POST':
+        form = TouristAttractionForm(request.POST, request.FILES)
+        if form.is_valid():
+            attraction = form.save()
+            messages.success(request, f'"{attraction.name}" has been added successfully!')
+            return redirect('maps:add_attraction_success', attraction_id=attraction.id)
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = TouristAttractionForm()
+    
+    return render(request, 'add_attraction.html', {'form': form})
+
+
+def add_ev_station(request):
+    """
+    View to add a new EV charging station
+    GET: Show empty form
+    POST: Process form submission with image upload
+    """
+    if request.method == 'POST':
+        form = EVChargingStationForm(request.POST, request.FILES)
+        if form.is_valid():
+            station = form.save()
+            messages.success(request, f'"{station.name}" has been added successfully!')
+            return redirect('maps:add_ev_station_success', station_id=station.id)
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = EVChargingStationForm()
+    
+    return render(request, 'add_ev_station.html', {'form': form})
+
+
+@owner_required
+def add_attraction_success(request, attraction_id):
+    """Show success page after adding attraction"""
+    attraction = get_object_or_404(TouristAttraction, id=attraction_id)
+    return render(request, 'add_success.html', {
+        'item': attraction,
+        'item_type': 'Tourist Attraction',
+        'add_another_url': 'maps:add_attraction',
+        'view_map_url': 'maps:map_view'
+    })
+
+@owner_required
+def add_ev_station_success(request, station_id):
+    """Show success page after adding EV station"""
+    station = get_object_or_404(EVChargingStation, id=station_id)
+    return render(request, 'add_success.html', {
+        'item': station,
+        'item_type': 'EV Charging Station',
+        'add_another_url': 'maps:add_ev_station',
+        'view_map_url': 'maps:map_view'
+    })
+
+@owner_required
+def add_location_menu(request):
+    """Menu page to choose what to add"""
+    return render(request, 'add_location_menu.html')

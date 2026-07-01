@@ -6,6 +6,7 @@ urlpatterns = [
     path('',                          views.index,            name='index'),
     path('base/',                     views.base,             name='base'),
     path('dashboard/',                views.dashboard,        name='dashboard'),
+    path('ownerdashboard/',           views.owner_dashboard,   name='ownerdashboard'),
 
     # Auth
     path('register/',                 views.register,         name='register'),

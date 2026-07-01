@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Location</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 600px; width: 100%; }
+
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #333; font-size: 1.8em; margin-bottom: 8px; }
+        .header p { color: #6c757d; }
+
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .option-card {
+            background: white;
+            border-radius: 14px;
+            padding: 30px 20px;
+            text-align: center;
+            text-decoration: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+        }
+
+        .option-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .option-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 1.8em;
+        }
+
+        .icon-attraction { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .icon-ev { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+
+        .option-card h3 { color: #333; margin-bottom: 6px; font-size: 1.1em; }
+        .option-card p { color: #6c757d; font-size: 0.85em; }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 25px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .back-link:hover { text-decoration: underline; }
+
+        @media (max-width: 500px) {
+            .options { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📍 Add New Location</h1>
+            <p>What would you like to add to the map?</p>
+        </div>
+
+        <div class="options">
+            <a href="{% url 'maps:add_attraction' %}" class="option-card">
+                <div class="option-icon icon-attraction">🏛️</div>
+                <h3>Tourist Attraction</h3>
+                <p>Add a temple, park, monument or other point of interest</p>
+            </a>
+
+            <a href="{% url 'maps:add_ev_station' %}" class="option-card">
+                <div class="option-icon icon-ev">⚡</div>
+                <h3>EV Charging Station</h3>
+                <p>Add a new electric vehicle charging point</p>
+            </a>
+        </div>
+
+        <a href="{% url 'maps:map_view' %}" class="back-link">← Back to Map</a>
+    </div>
+</body>
+</html>

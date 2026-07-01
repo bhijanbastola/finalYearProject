@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from .forms import CustomerRegistrationForm, HotelRegistrationForm
 from .models import (Booking, Customer, Guide, Hotel, HotelOwner, Room, Trip,
                      UserProfile)
+from django.db.models import Sum, Count
 
 load_dotenv()
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
@@ -29,8 +30,61 @@ def base(request):
     return render(request, 'base.html')
 
 
+@login_required
 def dashboard(request):
-    return render(request, 'dashboard.html')
+    user = request.user
+    is_superuser = user.is_superuser
+
+    # Determine which bookings this user can see
+    if is_superuser:
+        # Superusers see platform-wide totals
+        hotel_bookings = Booking.objects.all()
+        guide_bookings = Booking.objects.filter(guide__isnull=False)
+        owner_hotels = Hotel.objects.all()
+        owner_guides = Guide.objects.all()
+    else:
+        # Hotel owners see only their own hotels/guides
+        owner_hotels = Hotel.objects.filter(owner=user)
+        owner_guides = Guide.objects.filter(owner=user)
+        hotel_bookings = Booking.objects.filter(hotel__in=owner_hotels)
+        guide_bookings = Booking.objects.filter(guide__in=owner_guides)
+
+    # ── Hotel Revenue ───────────────────────────────────────────
+    total_hotel_revenue = hotel_bookings.aggregate(
+        total=Sum('total_price')
+    )['total'] or 0
+
+    # ── Guide Revenue (guide.price_per_day × nights per booking) ──
+    # The Booking.total_price already includes the guide cost, so we
+    # re-derive the guide portion: price_per_day × number_of_nights
+    total_guide_revenue = 0
+    for b in guide_bookings:
+        if b.guide:
+            nights = (b.check_out - b.check_in).days
+            total_guide_revenue += float(b.guide.price_per_day) * max(nights, 0)
+
+    # ── Aggregate stats ─────────────────────────────────────────
+    total_bookings = hotel_bookings.count()
+    total_customers = hotel_bookings.values('user').distinct().count()
+
+    # ── Recent bookings (last 10) ───────────────────────────────
+    recent_bookings = hotel_bookings.select_related(
+        'user', 'hotel', 'room', 'guide'
+    ).order_by('-created_at')[:10]
+
+    context = {
+        'total_hotel_revenue': total_hotel_revenue,
+        'total_guide_revenue': total_guide_revenue,
+        'total_bookings': total_bookings,
+        'total_customers': total_customers,
+        'recent_bookings': recent_bookings,
+        'owner_hotels': owner_hotels,
+        'owner_guides': owner_guides,
+        'is_superuser': is_superuser,
+    }
+    return render(request, 'dashboard.html', context)
+
+
 
 
 def destinations(request):
@@ -89,7 +143,7 @@ def register(request):
             UserProfile.objects.create(user=user, role=role)
             login(request, user)
 
-            return redirect('dashboard' if role == 'hotel_owner' else 'index')
+            return redirect('ownerdashboard' if role == 'hotel_owner' else 'index')
         else:
             messages.error(request, 'Please fix the errors below.')
     else:
@@ -360,3 +414,125 @@ def route(request, trip_id):
         hotels = Hotel.objects.filter(available_rooms__gt=0)[:6]
     return render(request, "route.html", {"trip": trip, "hotels": hotels})
 
+
+from decimal import Decimal
+
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum, Count, F, DecimalField, ExpressionWrapper
+from django.shortcuts import render
+from django.utils import timezone
+from datetime import timedelta
+
+from .models import Booking, Hotel, Room, Guide
+
+@login_required
+def owner_dashboard(request):
+    """
+    Earnings dashboard for the logged-in user, covering:
+      - Hotels they own (via Hotel.owner)
+      - Guide profile(s) they own (via Guide.owner)
+ 
+    A user can be both a hotel owner and a guide, so both sections render
+    conditionally based on what they actually own.
+    """
+    user = request.user
+    today = timezone.now().date()
+    thirty_days_ago = today - timedelta(days=30)
+ 
+    context = {}
+ 
+    # -------------------------------------------------------------------
+    # HOTEL EARNINGS
+    # -------------------------------------------------------------------
+    owned_hotels = Hotel.objects.filter(owner=user)
+ 
+    if owned_hotels.exists():
+        hotel_bookings = Booking.objects.filter(hotel__owner=user)
+ 
+        total_hotel_revenue = hotel_bookings.aggregate(
+            total=Sum('total_price')
+        )['total'] or Decimal('0.00')
+ 
+        total_bookings = hotel_bookings.count()
+ 
+        revenue_30d = hotel_bookings.filter(
+            created_at__date__gte=thirty_days_ago
+        ).aggregate(total=Sum('total_price'))['total'] or Decimal('0.00')
+ 
+        hotel_breakdown = (
+            owned_hotels
+            .annotate(
+                revenue=Sum('room__booking__total_price'),
+                booking_count=Count('room__booking'),
+            )
+            .order_by('-revenue')
+        )
+ 
+        room_breakdown = (
+            Room.objects.filter(hotel__owner=user)
+            .annotate(
+                revenue=Sum('booking__total_price'),
+                booking_count=Count('booking'),
+            )
+            .order_by('-revenue')
+        )
+ 
+        context.update({
+            'is_hotel_owner': True,
+            'total_hotel_revenue': total_hotel_revenue,
+            'total_hotel_bookings': total_bookings,
+            'hotel_revenue_30d': revenue_30d,
+            'hotel_breakdown': hotel_breakdown,
+            'room_breakdown': room_breakdown,
+        })
+    else:
+        context['is_hotel_owner'] = False
+ 
+    # -------------------------------------------------------------------
+    # GUIDE EARNINGS
+    # -------------------------------------------------------------------
+    # Guide has no per-booking fee field — earnings are derived from
+    # price_per_day * number of days on each booking the guide is attached
+    # to (check_out - check_in). This is NOT a cut of Booking.total_price,
+    # since total_price only reflects the room charge.
+    owned_guides = Guide.objects.filter(owner=user)
+ 
+    if owned_guides.exists():
+        guide_bookings = (
+            Booking.objects
+            .filter(guide__owner=user)
+            .select_related('guide')
+        )
+ 
+        guide_earnings_total = Decimal('0.00')
+        guide_breakdown = []
+ 
+        for guide in owned_guides:
+            g_bookings = guide_bookings.filter(guide=guide)
+            g_earnings = Decimal('0.00')
+            g_days_total = 0
+ 
+            for booking in g_bookings:
+                days = (booking.check_out - booking.check_in).days
+                days = max(days, 1)  # guard against same-day bookings
+                g_earnings += guide.price_per_day * days
+                g_days_total += days
+ 
+            guide_earnings_total += g_earnings
+            guide_breakdown.append({
+                'guide': guide,
+                'booking_count': g_bookings.count(),
+                'days_booked': g_days_total,
+                'earnings': g_earnings,
+            })
+ 
+        context.update({
+            'is_guide': True,
+            'guide_earnings_total': guide_earnings_total,
+            'guide_breakdown': guide_breakdown,
+            'total_guide_bookings': guide_bookings.count(),
+        })
+    else:
+        context['is_guide'] = False
+ 
+    return render(request, 'owner_dashboard.html', context)

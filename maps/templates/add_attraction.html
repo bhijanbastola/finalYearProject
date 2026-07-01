@@ -1,0 +1,310 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Tourist Attraction</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; padding: 20px; }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .header h1 { font-size: 1.8em; margin-bottom: 5px; }
+        .header p { opacity: 0.9; }
+
+        .container { max-width: 700px; margin: 0 auto; }
+
+        .form-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        .messages { margin-bottom: 20px; }
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+        .message.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .message.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-group { margin-bottom: 18px; }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.9em;
+        }
+
+        .form-group .required { color: #e03131; }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 0.95em;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea.form-control { resize: vertical; min-height: 90px; }
+
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+        }
+        .checkbox-row input[type="checkbox"] { width: 18px; height: 18px; }
+        .checkbox-row label { margin: 0; font-weight: 500; }
+
+        .image-preview {
+            margin-top: 10px;
+            max-width: 200px;
+            border-radius: 8px;
+            display: none;
+        }
+        .image-preview.show { display: block; }
+
+        .errorlist {
+            list-style: none;
+            color: #e03131;
+            font-size: 0.85em;
+            margin-top: 4px;
+        }
+
+        .location-helper {
+            background: #e7f3ff;
+            border-left: 4px solid #667eea;
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            color: #495057;
+        }
+        .location-helper a { color: #667eea; font-weight: 600; }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            flex: 1;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+
+        .btn-secondary {
+            background: #f1f3f5;
+            color: #495057;
+        }
+        .btn-secondary:hover { background: #e9ecef; }
+
+        .section-title {
+            font-size: 1em;
+            font-weight: 700;
+            color: #667eea;
+            margin: 25px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .section-title:first-child { margin-top: 0; }
+
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏛️ Add Tourist Attraction</h1>
+            <p>Fill in the details below to add a new attraction to the map</p>
+        </div>
+
+        <div class="form-card">
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="message {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="location-helper">
+                📍 Need coordinates? Open <a href="https://www.google.com/maps" target="_blank">Google Maps</a>, 
+                right-click the location, and copy the latitude/longitude shown.
+            </div>
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="section-title">Basic Information</div>
+
+                <div class="form-group">
+                    <label for="{{ form.name.id_for_label }}">Attraction Name <span class="required">*</span></label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<ul class="errorlist">{% for e in form.name.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.description.id_for_label }}">Description</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}<ul class="errorlist">{% for e in form.description.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.category.id_for_label }}">Category <span class="required">*</span></label>
+                    {{ form.category }}
+                    {% if form.category.errors %}<ul class="errorlist">{% for e in form.category.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+
+                <div class="section-title">Location</div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.latitude.id_for_label }}">Latitude <span class="required">*</span></label>
+                        {{ form.latitude }}
+                        {% if form.latitude.errors %}<ul class="errorlist">{% for e in form.latitude.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.longitude.id_for_label }}">Longitude <span class="required">*</span></label>
+                        {{ form.longitude }}
+                        {% if form.longitude.errors %}<ul class="errorlist">{% for e in form.longitude.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.address.id_for_label }}">Address</label>
+                    {{ form.address }}
+                    {% if form.address.errors %}<ul class="errorlist">{% for e in form.address.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                </div>
+
+                <div class="section-title">Details</div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.rating.id_for_label }}">Rating (0-5)</label>
+                        {{ form.rating }}
+                        {% if form.rating.errors %}<ul class="errorlist">{% for e in form.rating.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.entry_fee.id_for_label }}">Entry Fee (NPR)</label>
+                        {{ form.entry_fee }}
+                        {% if form.entry_fee.errors %}<ul class="errorlist">{% for e in form.entry_fee.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.opening_time.id_for_label }}">Opening Time</label>
+                        {{ form.opening_time }}
+                        {% if form.opening_time.errors %}<ul class="errorlist">{% for e in form.opening_time.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.closing_time.id_for_label }}">Closing Time</label>
+                        {{ form.closing_time }}
+                        {% if form.closing_time.errors %}<ul class="errorlist">{% for e in form.closing_time.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.contact_number.id_for_label }}">Contact Number</label>
+                        {{ form.contact_number }}
+                        {% if form.contact_number.errors %}<ul class="errorlist">{% for e in form.contact_number.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="{{ form.website.id_for_label }}">Website</label>
+                        {{ form.website }}
+                        {% if form.website.errors %}<ul class="errorlist">{% for e in form.website.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    </div>
+                </div>
+
+                <div class="section-title">Image</div>
+
+                <div class="form-group">
+                    <label for="{{ form.image.id_for_label }}">Upload Photo</label>
+                    {{ form.image }}
+                    {% if form.image.errors %}<ul class="errorlist">{% for e in form.image.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+                    <img id="imagePreview" class="image-preview" src="" alt="Preview">
+                </div>
+
+                <div class="checkbox-row">
+                    {{ form.is_active }}
+                    <label for="{{ form.is_active.id_for_label }}">Active (visible on map immediately)</label>
+                </div>
+
+                <div class="btn-row">
+                    <button type="submit" class="btn btn-primary">✓ Add Attraction</button>
+                    <a href="{% url 'maps:map_view' %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Image preview
+        const imageInput = document.querySelector('input[type="file"]');
+        const preview = document.getElementById('imagePreview');
+        if (imageInput) {
+            imageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.src = e.target.result;
+                        preview.classList.add('show');
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.classList.remove('show');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

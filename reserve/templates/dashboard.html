@@ -817,7 +817,7 @@
             <div class="stats-grid">
               <div class="stat-card">
                 <div class="stat-header">
-                  <span class="stat-label">Total Revenue</span>
+                  <span class="stat-label">Hotel Revenue</span>
                   <div class="stat-icon-wrap">
                     <div
                       style="
@@ -829,13 +829,13 @@
                       "
                     >
                       <iconify-icon
-                        icon="lucide:dollar-sign"
+                        icon="lucide:building-2"
                         style="font-size: 18px; color: currentColor"
                       ></iconify-icon>
                     </div>
                   </div>
                 </div>
-                <div class="stat-value">$124,500</div>
+                <div class="stat-value">${{ total_hotel_revenue|floatformat:0 }}</div>
                 <div class="stat-trend trend-up">
                   <div
                     style="
@@ -851,53 +851,13 @@
                       style="font-size: 14px; color: currentColor"
                     ></iconify-icon>
                   </div>
-                  +12.5%
+                  From bookings
                 </div>
               </div>
 
               <div class="stat-card">
                 <div class="stat-header">
-                  <span class="stat-label">New Bookings</span>
-                  <div class="stat-icon-wrap">
-                    <div
-                      style="
-                        width: 18px;
-                        height: 18px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                      "
-                    >
-                      <iconify-icon
-                        icon="lucide:shopping-bag"
-                        style="font-size: 18px; color: currentColor"
-                      ></iconify-icon>
-                    </div>
-                  </div>
-                </div>
-                <div class="stat-value">342</div>
-                <div class="stat-trend trend-up">
-                  <div
-                    style="
-                      width: 14px;
-                      height: 14px;
-                      display: flex;
-                      align-items: center;
-                      justify-content: center;
-                    "
-                  >
-                    <iconify-icon
-                      icon="lucide:trending-up"
-                      style="font-size: 14px; color: currentColor"
-                    ></iconify-icon>
-                  </div>
-                  +4.2%
-                </div>
-              </div>
-
-              <div class="stat-card">
-                <div class="stat-header">
-                  <span class="stat-label">Active Tours</span>
+                  <span class="stat-label">Guide Revenue</span>
                   <div class="stat-icon-wrap">
                     <div
                       style="
@@ -915,8 +875,8 @@
                     </div>
                   </div>
                 </div>
-                <div class="stat-value">28</div>
-                <div class="stat-trend trend-down">
+                <div class="stat-value">${{ total_guide_revenue|floatformat:0 }}</div>
+                <div class="stat-trend trend-up">
                   <div
                     style="
                       width: 14px;
@@ -927,17 +887,57 @@
                     "
                   >
                     <iconify-icon
-                      icon="lucide:trending-down"
+                      icon="lucide:trending-up"
                       style="font-size: 14px; color: currentColor"
                     ></iconify-icon>
                   </div>
-                  -2.1%
+                  From guide hires
                 </div>
               </div>
 
               <div class="stat-card">
                 <div class="stat-header">
-                  <span class="stat-label">Total Travelers</span>
+                  <span class="stat-label">Total Bookings</span>
+                  <div class="stat-icon-wrap">
+                    <div
+                      style="
+                        width: 18px;
+                        height: 18px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                      "
+                    >
+                      <iconify-icon
+                        icon="lucide:calendar-check"
+                        style="font-size: 18px; color: currentColor"
+                      ></iconify-icon>
+                    </div>
+                  </div>
+                </div>
+                <div class="stat-value">{{ total_bookings }}</div>
+                <div class="stat-trend trend-up">
+                  <div
+                    style="
+                      width: 14px;
+                      height: 14px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                    "
+                  >
+                    <iconify-icon
+                      icon="lucide:shopping-bag"
+                      style="font-size: 14px; color: currentColor"
+                    ></iconify-icon>
+                  </div>
+                  All time
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-header">
+                  <span class="stat-label">Unique Customers</span>
                   <div class="stat-icon-wrap">
                     <div
                       style="
@@ -955,7 +955,7 @@
                     </div>
                   </div>
                 </div>
-                <div class="stat-value">1,284</div>
+                <div class="stat-value">{{ total_customers }}</div>
                 <div class="stat-trend trend-up">
                   <div
                     style="
@@ -967,11 +967,11 @@
                     "
                   >
                     <iconify-icon
-                      icon="lucide:trending-up"
+                      icon="lucide:user-check"
                       style="font-size: 14px; color: currentColor"
                     ></iconify-icon>
                   </div>
-                  +8.3%
+                  Distinct travelers
                 </div>
               </div>
             </div>
@@ -983,136 +983,50 @@
                 <div class="card-header">
                   <div class="card-title">Recent Bookings</div>
                   <div class="view-all-btn" data-media-type="banani-button">
-                    View all bookings
+                    {{ total_bookings }} total
                   </div>
                 </div>
                 <div class="table-container">
                   <table class="data-table">
                     <thead>
                       <tr>
-                        <th style="width: 35%">Traveler</th>
-                        <th style="width: 25%">Tour Package</th>
-                        <th style="width: 20%">Date</th>
-                        <th style="width: 20%">Status</th>
+                        <th style="width: 30%">Traveler</th>
+                        <th style="width: 25%">Hotel</th>
+                        <th style="width: 20%">Check-in</th>
+                        <th style="width: 25%">Amount</th>
                       </tr>
                     </thead>
                     <tbody>
+                      {% for booking in recent_bookings %}
                       <tr>
                         <td>
                           <div class="user-cell">
-                            <img
-                              src="https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FSouth%20Asian%2F2"
-                              alt="User"
-                              class="cell-avatar"
-                            />
+                            <div style="width:40px;height:40px;border-radius:50%;background:var(--secondary);display:flex;align-items:center;justify-content:center;font-weight:600;color:var(--primary);font-size:16px;">
+                              {{ booking.user.username|make_list|first|upper }}
+                            </div>
                             <div class="cell-text">
-                              <span class="cell-name">Sarah Jenkins</span>
-                              <span class="cell-sub">ID: #8824</span>
+                              <span class="cell-name">{{ booking.user.get_full_name|default:booking.user.username }}</span>
+                              <span class="cell-sub">Booking #{{ booking.id }}</span>
                             </div>
                           </div>
                         </td>
                         <td>
-                          <span class="tour-name">Bali Island Retreat</span>
+                          <span class="tour-name">{{ booking.hotel.name }}</span>
                         </td>
-                        <td>Oct 24, 2024</td>
+                        <td>{{ booking.check_in|date:"M d, Y" }}</td>
                         <td>
                           <span class="status-badge status-confirmed"
-                            >Confirmed</span
+                            >${{ booking.total_price|floatformat:0 }}</span
                           >
                         </td>
                       </tr>
+                      {% empty %}
                       <tr>
-                        <td>
-                          <div class="user-cell">
-                            <img
-                              src="https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F35-50%2FNorth%20American%2F3"
-                              alt="User"
-                              class="cell-avatar"
-                            />
-                            <div class="cell-text">
-                              <span class="cell-name">Michael Chen</span>
-                              <span class="cell-sub">ID: #8823</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span class="tour-name">Swiss Alps Hiking</span>
-                        </td>
-                        <td>Oct 23, 2024</td>
-                        <td>
-                          <span class="status-badge status-pending"
-                            >Pending</span
-                          >
+                        <td colspan="4" style="text-align:center;padding:40px;color:var(--muted-foreground);">
+                          No bookings yet
                         </td>
                       </tr>
-                      <tr>
-                        <td>
-                          <div class="user-cell">
-                            <img
-                              src="https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F18-25%2FHispanic%2F1"
-                              alt="User"
-                              class="cell-avatar"
-                            />
-                            <div class="cell-text">
-                              <span class="cell-name">Maria Garcia</span>
-                              <span class="cell-sub">ID: #8822</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span class="tour-name">Kyoto Cultural Tour</span>
-                        </td>
-                        <td>Oct 22, 2024</td>
-                        <td>
-                          <span class="status-badge status-confirmed"
-                            >Confirmed</span
-                          >
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <div class="user-cell">
-                            <img
-                              src="https://storage.googleapis.com/banani-avatars/avatar%2Fmale%2F50-65%2FEuropean%2F5"
-                              alt="User"
-                              class="cell-avatar"
-                            />
-                            <div class="cell-text">
-                              <span class="cell-name">James Wilson</span>
-                              <span class="cell-sub">ID: #8821</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td><span class="tour-name">Safari Adventure</span></td>
-                        <td>Oct 21, 2024</td>
-                        <td>
-                          <span class="status-badge status-confirmed"
-                            >Confirmed</span
-                          >
-                        </td>
-                      </tr>
-                      <tr>
-                        <td>
-                          <div class="user-cell">
-                            <img
-                              src="https://storage.googleapis.com/banani-avatars/avatar%2Ffemale%2F25-35%2FEast%20Asian%2F3"
-                              alt="User"
-                              class="cell-avatar"
-                            />
-                            <div class="cell-text">
-                              <span class="cell-name">Emily Wong</span>
-                              <span class="cell-sub">ID: #8820</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td><span class="tour-name">Paris Weekend</span></td>
-                        <td>Oct 20, 2024</td>
-                        <td>
-                          <span class="status-badge status-pending"
-                            >Pending</span
-                          >
-                        </td>
-                      </tr>
+                      {% endfor %}
                     </tbody>
                   </table>
                 </div>

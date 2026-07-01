@@ -16,6 +16,7 @@ class UserProfile(models.Model):
 
 
 class Hotel(models.Model):
+    owner           = models.ForeignKey(User, on_delete=models.CASCADE, related_name='owned_hotels', null=True, blank=True)
     name            = models.CharField(max_length=255)
     location        = models.CharField(max_length=255, blank=True, null=True)
     address         = models.CharField(max_length=255, blank=True, null=True)
@@ -43,6 +44,7 @@ class Room(models.Model):
 
 
 class Guide(models.Model):
+    owner           = models.ForeignKey(User, on_delete=models.CASCADE, related_name='owned_guides', null=True, blank=True)
     name            = models.CharField(max_length=255)
     location        = models.CharField(max_length=255)
     phone           = models.CharField(max_length=50)

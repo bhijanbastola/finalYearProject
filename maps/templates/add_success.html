@@ -1,0 +1,121 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Successfully Added</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .success-card {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .success-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2em;
+        }
+
+        h1 { color: #333; margin-bottom: 10px; font-size: 1.5em; }
+        .subtitle { color: #6c757d; margin-bottom: 25px; }
+
+        .item-preview {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .item-preview img {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .item-preview h3 { color: #333; margin-bottom: 8px; }
+        .item-preview p { color: #6c757d; font-size: 0.9em; margin: 4px 0; }
+        .item-preview strong { color: #495057; }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+
+        .btn-secondary {
+            background: #f1f3f5;
+            color: #495057;
+        }
+        .btn-secondary:hover { background: #e9ecef; }
+    </style>
+</head>
+<body>
+    <div class="success-card">
+        <div class="success-icon">✓</div>
+        <h1>{{ item_type }} Added!</h1>
+        <p class="subtitle">Your location has been saved successfully.</p>
+
+        <div class="item-preview">
+            {% if item.image %}
+            <img src="{{ item.image.url }}" alt="{{ item.name }}">
+            {% endif %}
+            <h3>{{ item.name }}</h3>
+            {% if item.address %}<p>📍 {{ item.address }}</p>{% endif %}
+            <p><strong>Coordinates:</strong> {{ item.latitude }}, {{ item.longitude }}</p>
+            {% if item.category %}<p><strong>Category:</strong> {{ item.category }}</p>{% endif %}
+            {% if item.charger_type %}<p><strong>Charger Type:</strong> {{ item.charger_type }}</p>{% endif %}
+        </div>
+
+        <div class="btn-row">
+            <a href="{% url add_another_url %}" class="btn btn-secondary">+ Add Another</a>
+            <a href="{% url view_map_url %}" class="btn btn-primary">View on Map</a>
+        </div>
+    </div>
+</body>
+</html>
